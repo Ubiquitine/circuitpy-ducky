@@ -29,7 +29,8 @@ from .parser import (
     KbdStmt,
     RandomCharFromStmt,
     WaitForButtonPressStmt,
-    LedOnStmt,
+    LedGStmt,
+    LedRStmt,
     LedOffStmt,
 )
 
@@ -142,8 +143,10 @@ class Interpreter:
             self._execute_random_char_from(node)
         elif isinstance(node, WaitForButtonPressStmt):
             self._execute_wait_for_button_press(node)
-        elif isinstance(node, LedOnStmt):
-            self._execute_led_on(node)
+        elif isinstance(node, LedGStmt):
+            self._execute_led_g(node)
+        elif isinstance(node, LedRStmt):
+            self._execute_led_r(node)
         elif isinstance(node, LedOffStmt):
             self._execute_led_off(node)
         elif isinstance(node, Literal):
@@ -228,8 +231,11 @@ class Interpreter:
     def _execute_wait_for_button_press(self, node: WaitForButtonPressStmt):
         self.button.wait_for_press()
 
-    def _execute_led_on(self, node: LedOnStmt):
-        self.led.on()
+    def _execute_led_g(self, node: LedGStmt):
+        self.led.on((255, 0, 0))
+    
+    def _execute_led_r(self, node: LedRStmt):
+        self.led.on((0, 255, 0))
 
     def _execute_led_off(self, node: LedOffStmt):
         self.led.off()

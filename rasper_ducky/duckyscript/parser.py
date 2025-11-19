@@ -190,10 +190,13 @@ class WaitForButtonPressStmt(Stmt):
         return "WAIT_FOR_BUTTON_PRESS()"
 
 
-class LedOnStmt(Stmt):
+class LedGStmt(Stmt):
     def __repr__(self):
         return "LED_G()"
 
+class LedRStmt(Stmt):
+    def __repr__(self):
+        return "LED_R()"
 
 class LedOffStmt(Stmt):
     def __repr__(self):
@@ -244,7 +247,9 @@ class Parser:
         elif self.match(Tok.WAIT_FOR_BUTTON_PRESS):
             return self.wait_for_button_press_stmt()
         elif self.match(Tok.LED_G):
-            return self.led_on_stmt()
+            return self.led_g_stmt()
+        elif self.match(Tok.LED_R):
+            return self.led_r_stmt()
         elif self.match(Tok.LED_OFF):
             return self.led_off_stmt()
 
@@ -355,9 +360,13 @@ class Parser:
         self.consume_termination("Expected a line break after WAIT_FOR_BUTTON_PRESS")
         return WaitForButtonPressStmt()
 
-    def led_on_stmt(self) -> LedOnStmt:
+    def led_g_stmt(self) -> LedGStmt:
         self.consume_termination("Expected a line break after LED_G")
-        return LedOnStmt()
+        return LedGStmt()
+    
+    def led_r_stmt(self) -> LedRStmt:
+        self.consume_termination("Expected a line break after LED_R")
+        return LedRStmt()
 
     def led_off_stmt(self) -> LedOffStmt:
         self.consume_termination("Expected a line break after LED_OFF")
