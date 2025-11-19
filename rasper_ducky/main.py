@@ -1,5 +1,6 @@
 import time
-
+import digitalio
+import board
 from duckyscript.lexer import Lexer
 from duckyscript.parser import Parser
 from duckyscript.interpreter import Interpreter
@@ -24,4 +25,12 @@ with open("payload.dd", "r") as file:
     payload_code = file.read()
 
 
-execute(payload_code)
+SAFE_MODE_PIN = digitalio.DigitalInOut(board.GP0)
+SAFE_MODE_PIN.switch_to_input(pull=digitalio.Pull.UP)
+safe_mode_status = SAFE_MODE_PIN.value
+
+safe_mode = not safe_mode_status
+if safe_mode:
+    print("SAFE MODE. Not executing payload.")
+else:
+    execute(payload_code)
