@@ -99,7 +99,7 @@ class Interpreter:
         self.variables = {}
         self.functions = {}
         self.execution_stack = []
-        self.keyboard = RasperDuckyKeyboard("win", "uk")
+        self.keyboard = RasperDuckyKeyboard("win", "us")
         self.button = Button()
         self.led = LED()
         self.eval_stack = []
