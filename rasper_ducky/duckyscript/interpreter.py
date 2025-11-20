@@ -115,6 +115,9 @@ class Interpreter:
             self._execute(node)
 
     def _execute(self, node: Stmt):
+        if node is None:
+            return  # silently skip
+        
         if isinstance(node, VarStmt):
             self._execute_var_declaration(node)
         elif isinstance(node, IfStmt):

@@ -252,6 +252,8 @@ class Parser:
             return self.led_r_stmt()
         elif self.match(Tok.LED_OFF):
             return self.led_off_stmt()
+        elif self.match(Tok.ATTACKMODE):
+            return self.skip_attackmode_stmt()
 
         return self.expression_stmt()
 
@@ -371,6 +373,12 @@ class Parser:
     def led_off_stmt(self) -> LedOffStmt:
         self.consume_termination("Expected a line break after LED_OFF")
         return LedOffStmt()
+    
+    def skip_attackmode_stmt(self):
+        while not self.check(Tok.EOL) and not self.is_at_end():
+            self.advance()
+        self.consume_termination("Expected a line break after ATTACKMODE MODE")
+        return None
 
     def block(self) -> list[Stmt]:
         statements = []
