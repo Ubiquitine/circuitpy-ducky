@@ -95,12 +95,12 @@ class Interpreter:
         "RANDOM_CHAR": "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()",
     }
 
-    def __init__(self):
+    def __init__(self, buttonPin):
         self.variables = {}
         self.functions = {}
         self.execution_stack = []
         self.keyboard = RasperDuckyKeyboard("win", "us")
-        self.button = Button()
+        self.button = Button(buttonPin)
         self.led = LED()
         self.eval_stack = []
         self.value_stack = []
@@ -235,10 +235,10 @@ class Interpreter:
         self.button.wait_for_press()
 
     def _execute_led_g(self, node: LedGStmt):
-        self.led.on((255, 0, 0))
+        self.led.on((255, 0, 0)) # Seems like the LED in GRB
     
     def _execute_led_r(self, node: LedRStmt):
-        self.led.on((0, 255, 0))
+        self.led.on((0, 255, 0)) # Seems like the LED in GRB
 
     def _execute_led_off(self, node: LedOffStmt):
         self.led.off()

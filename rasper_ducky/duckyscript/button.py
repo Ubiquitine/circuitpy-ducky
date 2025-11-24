@@ -4,11 +4,8 @@ import digitalio
 
 
 class Button:
-    def __init__(self, pin=None):
-        if pin is None:
-            pin = board.GP15
-        self.button = digitalio.DigitalInOut(pin)
-        self.button.switch_to_input(pull=digitalio.Pull.UP)
+    def __init__(self, pin):
+        self.button = pin
 
     def wait_for_press(self):
         """Wait for button press (transition from HIGH to LOW)"""
