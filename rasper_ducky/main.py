@@ -1,6 +1,7 @@
 import time
 import digitalio
 import board
+import storage
 
 # sleep at the start to allow the device to be recognized by the host computer
 time.sleep(0.5)
@@ -27,7 +28,7 @@ def execute(code: str):
     
     del prep, lex, tkns, prsr, ast, intr
 
-if safe_mode:
+if safe_mode or storage.getmount("/").readonly:
     from duckyscript.led import LED
     led = LED()
     print("SAFE MODE. Not executing payload.")
@@ -38,4 +39,3 @@ else:
     with open("payload.dd", "r") as file:
         payload_code = file.read()
     execute(payload_code)
-
