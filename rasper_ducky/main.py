@@ -25,7 +25,12 @@ def execute(code: str):
 
 safe_mode = not safe_mode_status
 if safe_mode:
+    from duckyscript.led import LED
+    led = LED()
     print("SAFE MODE. Not executing payload.")
+    led.on((0, 255, 255))
+    time.sleep(5)
+    led.off()
 else:
     with open("payload.dd", "r") as file:
         payload_code = file.read()
