@@ -31,6 +31,7 @@ from .parser import (
     WaitForButtonPressStmt,
     LedGStmt,
     LedRStmt,
+    LedBStmt,
     LedOffStmt,
 )
 
@@ -150,6 +151,8 @@ class Interpreter:
             self._execute_led_g(node)
         elif isinstance(node, LedRStmt):
             self._execute_led_r(node)
+        elif isinstance(node, LedBStmt):
+            self._execute_led_b(node)
         elif isinstance(node, LedOffStmt):
             self._execute_led_off(node)
         elif isinstance(node, Literal):
@@ -239,6 +242,9 @@ class Interpreter:
     
     def _execute_led_r(self, node: LedRStmt):
         self.led.on((0, 255, 0)) # Seems like the LED in GRB
+
+    def _execute_led_b(self, node: LedBStmt):
+        self.led.on((0, 0, 255)) # Seems like the LED in GRB
 
     def _execute_led_off(self, node: LedOffStmt):
         self.led.off()

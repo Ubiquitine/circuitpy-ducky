@@ -198,6 +198,10 @@ class LedRStmt(Stmt):
     def __repr__(self):
         return "LED_R()"
 
+class LedBStmt(Stmt):
+    def __repr__(self):
+        return "LED_B()"
+
 class LedOffStmt(Stmt):
     def __repr__(self):
         return "LED_OFF()"
@@ -250,6 +254,8 @@ class Parser:
             return self.led_g_stmt()
         elif self.match(Tok.LED_R):
             return self.led_r_stmt()
+        elif self.match(Tok.LED_B):
+            return self.led_b_stmt()
         elif self.match(Tok.LED_OFF):
             return self.led_off_stmt()
         elif self.match(Tok.ATTACKMODE):
@@ -369,6 +375,10 @@ class Parser:
     def led_r_stmt(self) -> LedRStmt:
         self.consume_termination("Expected a line break after LED_R")
         return LedRStmt()
+
+    def led_b_stmt(self) -> LedBStmt:
+        self.consume_termination("Expected a line break after LED_B")
+        return LedBStmt()
 
     def led_off_stmt(self) -> LedOffStmt:
         self.consume_termination("Expected a line break after LED_OFF")
