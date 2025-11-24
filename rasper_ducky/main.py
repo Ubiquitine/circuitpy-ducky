@@ -1,29 +1,32 @@
 import time
 import digitalio
 import board
-from duckyscript.lexer import Lexer
-from duckyscript.parser import Parser
-from duckyscript.interpreter import Interpreter
-from duckyscript.preprocessor import Preprocessor
 
 # sleep at the start to allow the device to be recognized by the host computer
 time.sleep(0.5)
 
-buttonPin = digitalio.DigitalInOut(board.GP29)
-buttonPin.switch_to_input(pull=digitalio.Pull.UP)
-safe_mode_status = buttonPin.value
+btn = digitalio.DigitalInOut(board.GP29)
+btn.switch_to_input(pull=digitalio.Pull.UP)
+safe_mode_status = btn.value
+safe_mode = not safe_mode_status
 
 def execute(code: str):
-    preprocessor = Preprocessor()
-    code = preprocessor.process(code)
-    lexer = Lexer(code)
-    tokens = list(lexer.tokenize())
-    parser = Parser(tokens)
-    ast = parser.parse()
-    interpreter = Interpreter(buttonPin)
-    interpreter.interpret(ast)
+    from duckyscript.lexer import Lexer
+    from duckyscript.parser import Parser
+    from duckyscript.interpreter import Interpreter
+    from duckyscript.preprocessor import Preprocessor
+    
+    prep = Preprocessor()
+    code = prep.process(code)
+    lex = Lexer(code)
+    tkns = list(lex.tokenize())
+    prsr = Parser(tkns)
+    ast = prsr.parse()
+    intr = Interpreter(btn)
+    intr.interpret(ast)
+    
+    del prep, lex, tkns, prsr, ast, intr
 
-safe_mode = not safe_mode_status
 if safe_mode:
     from duckyscript.led import LED
     led = LED()
@@ -35,3 +38,4 @@ else:
     with open("payload.dd", "r") as file:
         payload_code = file.read()
     execute(payload_code)
+

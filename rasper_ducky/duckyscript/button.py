@@ -1,6 +1,4 @@
 import time
-import board
-import digitalio
 
 
 class Button:
