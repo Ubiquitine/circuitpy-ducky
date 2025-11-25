@@ -134,7 +134,7 @@ There are some choices in the DuckyScript3 language that I dislike and may want 
 - [ ] Complete 1-to-1 DuckyScript3 implementation
   - [x] `WAIT_FOR_BUTTON_PRESS`
   - [ ] `BUTTON_DEF`
-  - [x] `LED_R` / `LED_G` (only one green led on the Raspberry Pi Pico)
+  - [x] `LED_R` / `LED_G` / `LED_B` (Using Neopixel for the boards that have it, but there is only one green led on the Raspberry Pi Pico)
   - [x] `RANDOM_LOWERCASE_LETTER`, `RANDOM_UPPERCASE_LETTER`, `RANDOM_LETTER`, `RANDOM_NUMBER`, `RANDOM_SPECIAL`, `RANDOM_CHAR`
   - [x] `HOLD` / `RELEASE`
   - [ ] `RESTART_PAYLOAD` / `STOP_PAYLOAD`
