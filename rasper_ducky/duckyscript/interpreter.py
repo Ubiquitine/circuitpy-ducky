@@ -192,7 +192,13 @@ class Interpreter:
             self.keyboard.release_all()
 
     def _execute_delay(self, node: DelayStmt):
-        time.sleep(float(node.value.value) / 1000)
+        delay_val = self._evaluate(node.value)
+        try:
+            ms = int(delay_val)
+        except Exception:
+            raise RuntimeError(f"DELAY expects a number, got: {ms}")
+            
+        time.sleep(float(ms / 1000))
 
     def _execute_expression(self, node: Expr):
         self._evaluate(node)

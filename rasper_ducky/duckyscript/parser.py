@@ -93,7 +93,7 @@ class VarStmt(Stmt):
 
 
 class DelayStmt(Stmt):
-    def __init__(self, value: Literal):
+    def __init__(self, value: Expr):
         self.value = value
 
     def __repr__(self):
@@ -309,9 +309,9 @@ class Parser:
         return KbdStmt(platform, language)
 
     def delay_stmt(self) -> DelayStmt:
-        value = self.consume(Tok.NUMBER, "Expected a number after DELAY")
+        value = self.expression()
         self.consume_termination("Expected a line break after a delay duration")
-        return DelayStmt(Literal(value.value))
+        return DelayStmt(value)
 
     def if_stmt(self) -> IfStmt:
         condition = self.expression()

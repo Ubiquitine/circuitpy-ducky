@@ -140,7 +140,7 @@ There are some choices in the DuckyScript3 language that I dislike and may want 
   - [ ] `RESTART_PAYLOAD` / `STOP_PAYLOAD`
 - [ ] Improve error handling and debugging features
 - [ ] Custom backward compatible features
-  - [ ] Pass a variable to `DELAY`
+  - [x] Pass a variable to `DELAY`
   - [ ] Pass a variable to `STRING` and `STRINGLN`
   - [ ] Add support for `#` comments
   - [ ] Prevent the user from shadowing a keyword with a `DEFINE`
