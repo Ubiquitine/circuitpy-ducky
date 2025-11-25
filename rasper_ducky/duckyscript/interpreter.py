@@ -126,9 +126,9 @@ class Interpreter:
         elif isinstance(node, WhileStmt):
             self._execute_while_statement(node)
         elif isinstance(node, StringStmt):
-            self._execute_print_string(node)
+            self._execute_print_string(node, newline=False)
         elif isinstance(node, StringLnStmt):
-            self._execute_print_stringln(node)
+            self._execute_print_string(node, newline=True)
         elif isinstance(node, DelayStmt):
             self._execute_delay(node)
         elif isinstance(node, Binary):
@@ -148,11 +148,11 @@ class Interpreter:
         elif isinstance(node, WaitForButtonPressStmt):
             self._execute_wait_for_button_press(node)
         elif isinstance(node, LedGStmt):
-            self._execute_led_g(node)
+            self._execute_led_on(node, (255, 0, 0))
         elif isinstance(node, LedRStmt):
-            self._execute_led_r(node)
+            self._execute_led_on(node, (0, 255, 0))
         elif isinstance(node, LedBStmt):
-            self._execute_led_b(node)
+            self._execute_led_on(node, (0, 0, 255))
         elif isinstance(node, LedOffStmt):
             self._execute_led_off(node)
         elif isinstance(node, Literal):
@@ -168,14 +168,11 @@ class Interpreter:
         if self._evaluate(node.condition):
             self._push_statements(node.then_block)
         else:
-            self._execute_else_if_or_else(node)
-
-    def _execute_else_if_or_else(self, node: IfStmt):
-        for else_if in node.else_if_blocks:
-            if self._evaluate(else_if.condition):
-                self._push_statements(else_if.then_block)
-                return
-        self._push_statements(node.else_block)
+            for else_if in node.else_if_blocks:
+                if self._evaluate(else_if.condition):
+                    self._push_statements(else_if.then_block)
+                    return
+            self._push_statements(node.else_block)
 
     def _push_statements(self, statements: list[Stmt]):
         """Push statements onto execution stack in reverse order"""
@@ -187,15 +184,12 @@ class Interpreter:
             self.stmt_stack.append(node)
             self._push_statements(node.body)
 
-    def _execute_print_string(self, node: StringStmt):
+    def _execute_print_string(self, node: StringStmt, newline=False):
         self.execution_stack.append(node.value.value)
         self.keyboard.type_string(node.value.value)
-
-    def _execute_print_stringln(self, node: StringLnStmt):
-        self.execution_stack.append(node.value.value)
-        self.keyboard.type_string(node.value.value)
-        self.keyboard.press_key("ENTER")
-        self.keyboard.release_all()
+        if newline:
+            self.keyboard.press_key("ENTER")
+            self.keyboard.release_all()
 
     def _execute_delay(self, node: DelayStmt):
         time.sleep(float(node.value.value) / 1000)
@@ -236,15 +230,9 @@ class Interpreter:
 
     def _execute_wait_for_button_press(self, node: WaitForButtonPressStmt):
         self.button.wait_for_press()
-
-    def _execute_led_g(self, node: LedGStmt):
-        self.led.on((255, 0, 0)) # Seems like the LED in GRB
     
-    def _execute_led_r(self, node: LedRStmt):
-        self.led.on((0, 255, 0)) # Seems like the LED in GRB
-
-    def _execute_led_b(self, node: LedBStmt):
-        self.led.on((0, 0, 255)) # Seems like the LED in GRB
+    def _execute_led_on(self, node, color=(255, 255, 255)):
+        self.led.on(color)
 
     def _execute_led_off(self, node: LedOffStmt):
         self.led.off()
