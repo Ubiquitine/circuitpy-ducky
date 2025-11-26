@@ -32,7 +32,7 @@ if safe_mode or storage.getmount("/").readonly:
     from duckyscript.led import LED
     led = LED()
     print("SAFE MODE. Not executing payload.")
-    led.on((0, 255, 255))
+    led.on((255, 0, 255))
     time.sleep(5)
     led.off()
 else:

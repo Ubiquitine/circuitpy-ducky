@@ -153,9 +153,9 @@ class Interpreter:
         elif isinstance(node, WaitForButtonPressStmt):
             self._execute_wait_for_button_press(node)
         elif isinstance(node, LedGStmt):
-            self._execute_led_on(node, (255, 0, 0))
-        elif isinstance(node, LedRStmt):
             self._execute_led_on(node, (0, 255, 0))
+        elif isinstance(node, LedRStmt):
+            self._execute_led_on(node, (255, 0, 0))
         elif isinstance(node, LedBStmt):
             self._execute_led_on(node, (0, 0, 255))
         elif isinstance(node, LedOffStmt):
