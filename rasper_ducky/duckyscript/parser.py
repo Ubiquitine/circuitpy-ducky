@@ -189,6 +189,12 @@ class WaitForButtonPressStmt(Stmt):
     def __repr__(self):
         return "WAIT_FOR_BUTTON_PRESS()"
 
+class ButtonDefStmt(Stmt):
+    def __init__(self, body: list[Stmt]):
+        self.body = body
+
+    def __repr__(self):
+        return f"BUTTON_DEF({self.body})"
 
 class LedGStmt(Stmt):
     def __repr__(self):
@@ -258,6 +264,8 @@ class Parser:
             return self.led_b_stmt()
         elif self.match(Tok.LED_OFF):
             return self.led_off_stmt()
+        elif self.match(Tok.BUTTON_DEF):
+            return self.button_def_stmt()
         elif self.match(Tok.ATTACKMODE):
             return self.skip_attackmode_stmt()
 
@@ -368,6 +376,13 @@ class Parser:
         self.consume_termination("Expected a line break after WAIT_FOR_BUTTON_PRESS")
         return WaitForButtonPressStmt()
 
+    def button_def_stmt(self) -> ButtonDefStmt:
+        self.consume(Tok.EOL, "Expected a line break after BUTTON_DEF")
+        body = self.block()
+        self.consume(Tok.END_BUTTON, "Expected END_BUTTON")
+        self.consume_termination("Expected a line break after END_BUTTON")
+        return ButtonDefStmt(body)
+
     def led_g_stmt(self) -> LedGStmt:
         self.consume_termination("Expected a line break after LED_G")
         return LedGStmt()
@@ -398,6 +413,7 @@ class Parser:
             and not self.check(Tok.ELSE)
             and not self.check(Tok.END_WHILE)
             and not self.check(Tok.END_FUNCTION)
+            and not self.check(Tok.END_BUTTON)
             and not self.is_at_end()
         ):
             statements.append(self.statement())

@@ -29,6 +29,7 @@ from .parser import (
     KbdStmt,
     RandomCharFromStmt,
     WaitForButtonPressStmt,
+    ButtonDefStmt,
     LedGStmt,
     LedRStmt,
     LedBStmt,
@@ -106,12 +107,16 @@ class Interpreter:
         self.eval_stack = []
         self.value_stack = []
         self.stmt_stack = []
+        self.button_handler = None
+        self.button_wait_active = False
+        self.button_last_state = False
 
     def interpret(self, ast: list[Stmt]):
         """Stack-based interpreter to avoid recursion limits"""
         self.stmt_stack = list(reversed(ast))
 
         while self.stmt_stack:
+            self._poll_button_handler()
             node = self.stmt_stack.pop()
             self._execute(node)
 
@@ -155,6 +160,8 @@ class Interpreter:
             self._execute_led_on(node, (0, 0, 255))
         elif isinstance(node, LedOffStmt):
             self._execute_led_off(node)
+        elif isinstance(node, ButtonDefStmt):
+            self.button_handler = node.body
         elif isinstance(node, Literal):
             pass  # A literal is a value, nothing to execute
         else:
@@ -246,8 +253,21 @@ class Interpreter:
         self.keyboard.type_string(random.choice(str(node.value.value)))
 
     def _execute_wait_for_button_press(self, node: WaitForButtonPressStmt):
+        self.button_wait_active = True
         self.button.wait_for_press()
-    
+        self.button_wait_active = False
+
+    def _poll_button_handler(self):
+        if not self.button_handler:
+            return
+        if self.button_wait_active:
+            return
+        pressed = self.button.is_pressed()
+        if pressed and not self.button_last_state:
+            for stmt in reversed(self.button_handler):
+                self.stmt_stack.append(stmt)
+        self.button_last_state = pressed
+
     def _execute_led_on(self, node, color=(255, 255, 255)):
         self.led.on(color)
 

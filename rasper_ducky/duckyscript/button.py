@@ -1,6 +1,5 @@
 import time
 
-
 class Button:
     def __init__(self, pin):
         self.button = pin
@@ -17,3 +16,5 @@ class Button:
 
         # Debounce
         time.sleep(0.05)
+    def is_pressed(self):
+        return not self.button.value
