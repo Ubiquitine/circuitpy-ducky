@@ -17,16 +17,16 @@ def execute(code: str):
     from duckyscript.interpreter import Interpreter
     from duckyscript.preprocessor import Preprocessor
     
-    prep = Preprocessor()
-    code = prep.process(code)
-    lex = Lexer(code)
-    tkns = list(lex.tokenize())
-    prsr = Parser(tkns)
-    ast = prsr.parse()
-    intr = Interpreter(btn)
-    intr.interpret(ast)
+    preprocessor = Preprocessor()
+    code = preprocessor.process(code)
+    lexer = Lexer(code)
+    tokens = list(lexer.tokenize())
+    parser = Parser(tokens)
+    ast = parser.parse()
+    interpreter = Interpreter(btn)
+    interpreter.interpret(ast)
     
-    del prep, lex, tkns, prsr, ast, intr
+    del preprocessor, lexer, tokens, parser, ast, interpreter
 
 if safe_mode or storage.getmount("/").readonly:
     from duckyscript.led import LED
