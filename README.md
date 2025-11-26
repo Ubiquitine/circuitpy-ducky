@@ -141,7 +141,7 @@ There are some choices in the DuckyScript3 language that I dislike and may want 
 - [ ] Improve error handling and debugging features
 - [ ] Custom backward compatible features
   - [x] Pass a variable to `DELAY`
-  - [ ] Pass a variable to `STRING` and `STRINGLN`
+  - [x] Pass a variable to `STRING` and `STRINGLN`. Must use ${var_name} inside the STRING and STRINGLN.
   - [ ] Add support for `#` comments
   - [ ] Prevent the user from shadowing a keyword with a `DEFINE`
   - [ ] Add a `CONTINUE` and a `BREAK` statement to loops

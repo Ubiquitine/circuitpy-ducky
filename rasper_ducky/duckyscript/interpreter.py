@@ -183,10 +183,21 @@ class Interpreter:
         if self._evaluate(node.condition):
             self.stmt_stack.append(node)
             self._push_statements(node.body)
+    
+    def _substitute_variables(self, node: str) -> str:
+        if not isinstance(node, str):
+            return node
+        output = node
+        for full_name, val in self.variables.items():
+            var = full_name[1:]
+            output = output.replace("${" + var + "}", str(val))
+        return output
 
     def _execute_print_string(self, node: StringStmt, newline=False):
-        self.execution_stack.append(node.value.value)
-        self.keyboard.type_string(node.value.value)
+        string = node.value.value
+        string = self._substitute_variables(string)
+        self.execution_stack.append(string)
+        self.keyboard.type_string(string)
         if newline:
             self.keyboard.press_key("ENTER")
             self.keyboard.release_all()
