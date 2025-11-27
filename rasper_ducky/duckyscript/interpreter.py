@@ -110,6 +110,7 @@ class Interpreter:
         self.button_handler = None
         self.button_wait_active = False
         self.button_last_state = False
+        self.button_ignore_until_released = False
 
     def interpret(self, ast: list[Stmt]):
         """Stack-based interpreter to avoid recursion limits"""
@@ -256,6 +257,7 @@ class Interpreter:
         self.button_wait_active = True
         self.button.wait_for_press()
         self.button_wait_active = False
+        self.button_ignore_until_released = True
 
     def _poll_button_handler(self):
         if not self.button_handler:
@@ -263,6 +265,14 @@ class Interpreter:
         if self.button_wait_active:
             return
         pressed = self.button.is_pressed()
+        if self.button_ignore_until_released:
+            if pressed:
+                return  # still held → keep ignoring
+            else:
+                # button was released → now handler may work normally
+                self.button_ignore_until_released = False
+                self.button_last_state = False
+                return
         if pressed and not self.button_last_state:
             for stmt in reversed(self.button_handler):
                 self.stmt_stack.append(stmt)
