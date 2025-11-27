@@ -93,7 +93,7 @@ class VarStmt(Stmt):
 
 
 class DelayStmt(Stmt):
-    def __init__(self, value: Literal):
+    def __init__(self, value: Expr):
         self.value = value
 
     def __repr__(self):
@@ -189,11 +189,24 @@ class WaitForButtonPressStmt(Stmt):
     def __repr__(self):
         return "WAIT_FOR_BUTTON_PRESS()"
 
+class ButtonDefStmt(Stmt):
+    def __init__(self, body: list[Stmt]):
+        self.body = body
 
-class LedOnStmt(Stmt):
+    def __repr__(self):
+        return f"BUTTON_DEF({self.body})"
+
+class LedGStmt(Stmt):
     def __repr__(self):
         return "LED_G()"
 
+class LedRStmt(Stmt):
+    def __repr__(self):
+        return "LED_R()"
+
+class LedBStmt(Stmt):
+    def __repr__(self):
+        return "LED_B()"
 
 class LedOffStmt(Stmt):
     def __repr__(self):
@@ -244,9 +257,17 @@ class Parser:
         elif self.match(Tok.WAIT_FOR_BUTTON_PRESS):
             return self.wait_for_button_press_stmt()
         elif self.match(Tok.LED_G):
-            return self.led_on_stmt()
+            return self.led_g_stmt()
+        elif self.match(Tok.LED_R):
+            return self.led_r_stmt()
+        elif self.match(Tok.LED_B):
+            return self.led_b_stmt()
         elif self.match(Tok.LED_OFF):
             return self.led_off_stmt()
+        elif self.match(Tok.BUTTON_DEF):
+            return self.button_def_stmt()
+        elif self.match(Tok.ATTACKMODE):
+            return self.skip_attackmode_stmt()
 
         return self.expression_stmt()
 
@@ -296,9 +317,9 @@ class Parser:
         return KbdStmt(platform, language)
 
     def delay_stmt(self) -> DelayStmt:
-        value = self.consume(Tok.NUMBER, "Expected a number after DELAY")
+        value = self.expression()
         self.consume_termination("Expected a line break after a delay duration")
-        return DelayStmt(Literal(value.value))
+        return DelayStmt(value)
 
     def if_stmt(self) -> IfStmt:
         condition = self.expression()
@@ -355,13 +376,34 @@ class Parser:
         self.consume_termination("Expected a line break after WAIT_FOR_BUTTON_PRESS")
         return WaitForButtonPressStmt()
 
-    def led_on_stmt(self) -> LedOnStmt:
+    def button_def_stmt(self) -> ButtonDefStmt:
+        self.consume(Tok.EOL, "Expected a line break after BUTTON_DEF")
+        body = self.block()
+        self.consume(Tok.END_BUTTON, "Expected END_BUTTON")
+        self.consume_termination("Expected a line break after END_BUTTON")
+        return ButtonDefStmt(body)
+
+    def led_g_stmt(self) -> LedGStmt:
         self.consume_termination("Expected a line break after LED_G")
-        return LedOnStmt()
+        return LedGStmt()
+    
+    def led_r_stmt(self) -> LedRStmt:
+        self.consume_termination("Expected a line break after LED_R")
+        return LedRStmt()
+
+    def led_b_stmt(self) -> LedBStmt:
+        self.consume_termination("Expected a line break after LED_B")
+        return LedBStmt()
 
     def led_off_stmt(self) -> LedOffStmt:
         self.consume_termination("Expected a line break after LED_OFF")
         return LedOffStmt()
+    
+    def skip_attackmode_stmt(self):
+        while not self.check(Tok.EOL) and not self.is_at_end():
+            self.advance()
+        self.consume_termination("Expected a line break after ATTACKMODE MODE")
+        return None
 
     def block(self) -> list[Stmt]:
         statements = []
@@ -371,6 +413,7 @@ class Parser:
             and not self.check(Tok.ELSE)
             and not self.check(Tok.END_WHILE)
             and not self.check(Tok.END_FUNCTION)
+            and not self.check(Tok.END_BUTTON)
             and not self.is_at_end()
         ):
             statements.append(self.statement())

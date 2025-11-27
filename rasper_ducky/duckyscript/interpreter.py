@@ -29,7 +29,10 @@ from .parser import (
     KbdStmt,
     RandomCharFromStmt,
     WaitForButtonPressStmt,
-    LedOnStmt,
+    ButtonDefStmt,
+    LedGStmt,
+    LedRStmt,
+    LedBStmt,
     LedOffStmt,
 )
 
@@ -98,22 +101,30 @@ class Interpreter:
         self.variables = {}
         self.functions = {}
         self.execution_stack = []
-        self.keyboard = RasperDuckyKeyboard("win", "uk")
+        self.keyboard = RasperDuckyKeyboard("win", "us")
         self.button = Button()
         self.led = LED()
         self.eval_stack = []
         self.value_stack = []
         self.stmt_stack = []
+        self.button_handler = None
+        self.button_wait_active = False
+        self.button_last_state = False
+        self.button_ignore_until_released = False
 
     def interpret(self, ast: list[Stmt]):
         """Stack-based interpreter to avoid recursion limits"""
         self.stmt_stack = list(reversed(ast))
 
         while self.stmt_stack:
+            self._poll_button_handler()
             node = self.stmt_stack.pop()
             self._execute(node)
 
     def _execute(self, node: Stmt):
+        if node is None:
+            return  # silently skip
+        
         if isinstance(node, VarStmt):
             self._execute_var_declaration(node)
         elif isinstance(node, IfStmt):
@@ -121,9 +132,9 @@ class Interpreter:
         elif isinstance(node, WhileStmt):
             self._execute_while_statement(node)
         elif isinstance(node, StringStmt):
-            self._execute_print_string(node)
+            self._execute_print_string(node, newline=False)
         elif isinstance(node, StringLnStmt):
-            self._execute_print_stringln(node)
+            self._execute_print_string(node, newline=True)
         elif isinstance(node, DelayStmt):
             self._execute_delay(node)
         elif isinstance(node, Binary):
@@ -142,10 +153,16 @@ class Interpreter:
             self._execute_random_char_from(node)
         elif isinstance(node, WaitForButtonPressStmt):
             self._execute_wait_for_button_press(node)
-        elif isinstance(node, LedOnStmt):
-            self._execute_led_on(node)
+        elif isinstance(node, LedGStmt):
+            self._execute_led_on(node, (0, 255, 0))
+        elif isinstance(node, LedRStmt):
+            self._execute_led_on(node, (255, 0, 0))
+        elif isinstance(node, LedBStmt):
+            self._execute_led_on(node, (0, 0, 255))
         elif isinstance(node, LedOffStmt):
             self._execute_led_off(node)
+        elif isinstance(node, ButtonDefStmt):
+            self.button_handler = node.body
         elif isinstance(node, Literal):
             pass  # A literal is a value, nothing to execute
         else:
@@ -159,14 +176,11 @@ class Interpreter:
         if self._evaluate(node.condition):
             self._push_statements(node.then_block)
         else:
-            self._execute_else_if_or_else(node)
-
-    def _execute_else_if_or_else(self, node: IfStmt):
-        for else_if in node.else_if_blocks:
-            if self._evaluate(else_if.condition):
-                self._push_statements(else_if.then_block)
-                return
-        self._push_statements(node.else_block)
+            for else_if in node.else_if_blocks:
+                if self._evaluate(else_if.condition):
+                    self._push_statements(else_if.then_block)
+                    return
+            self._push_statements(node.else_block)
 
     def _push_statements(self, statements: list[Stmt]):
         """Push statements onto execution stack in reverse order"""
@@ -177,19 +191,33 @@ class Interpreter:
         if self._evaluate(node.condition):
             self.stmt_stack.append(node)
             self._push_statements(node.body)
+    
+    def _substitute_variables(self, node: str) -> str:
+        if not isinstance(node, str):
+            return node
+        output = node
+        for full_name, val in self.variables.items():
+            var = full_name[1:]
+            output = output.replace("${" + var + "}", str(val))
+        return output
 
-    def _execute_print_string(self, node: StringStmt):
-        self.execution_stack.append(node.value.value)
-        self.keyboard.type_string(node.value.value)
-
-    def _execute_print_stringln(self, node: StringLnStmt):
-        self.execution_stack.append(node.value.value)
-        self.keyboard.type_string(node.value.value)
-        self.keyboard.press_key("ENTER")
-        self.keyboard.release_all()
+    def _execute_print_string(self, node: StringStmt, newline=False):
+        string = node.value.value
+        string = self._substitute_variables(string)
+        self.execution_stack.append(string)
+        self.keyboard.type_string(string)
+        if newline:
+            self.keyboard.press_key("ENTER")
+            self.keyboard.release_all()
 
     def _execute_delay(self, node: DelayStmt):
-        time.sleep(float(node.value.value) / 1000)
+        delay_val = self._evaluate(node.value)
+        try:
+            ms = int(delay_val)
+        except Exception:
+            raise RuntimeError(f"DELAY expects a number, got: {ms}")
+            
+        time.sleep(float(ms / 1000))
 
     def _execute_expression(self, node: Expr):
         self._evaluate(node)
@@ -226,10 +254,32 @@ class Interpreter:
         self.keyboard.type_string(random.choice(str(node.value.value)))
 
     def _execute_wait_for_button_press(self, node: WaitForButtonPressStmt):
+        self.button_wait_active = True
         self.button.wait_for_press()
+        self.button_wait_active = False
+        self.button_ignore_until_released = True
 
-    def _execute_led_on(self, node: LedOnStmt):
-        self.led.on()
+    def _poll_button_handler(self):
+        if not self.button_handler:
+            return
+        if self.button_wait_active:
+            return
+        pressed = self.button.is_pressed()
+        if self.button_ignore_until_released:
+            if pressed:
+                return  # still held → keep ignoring
+            else:
+                # button was released → now handler may work normally
+                self.button_ignore_until_released = False
+                self.button_last_state = False
+                return
+        if pressed and not self.button_last_state:
+            for stmt in reversed(self.button_handler):
+                self.stmt_stack.append(stmt)
+        self.button_last_state = pressed
+
+    def _execute_led_on(self, node, color=(255, 255, 255)):
+        self.led.on(color)
 
     def _execute_led_off(self, node: LedOffStmt):
         self.led.off()

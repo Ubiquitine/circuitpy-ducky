@@ -8,90 +8,100 @@ class RasperDuckyKeyboard:
         self.platform = platform
         self.language = language
 
-        try:
-            layout = __import__(f"keyboard_layout_{platform}_{language}")
-            keycode = __import__(f"keycode_{platform}_{language}")
-        except ImportError:
-            raise ValueError(
-                f"Language {language} not supported for platform {platform}"
-            )
+        if platform.upper() == "WIN" and language.upper() == "US":
+            from adafruit_hid.keyboard_layout_us import KeyboardLayoutUS
+            from adafruit_hid.keycode import Keycode
 
-        self.kbd = Keyboard(usb_hid.devices)
-        self.layout = layout.KeyboardLayout(self.kbd)
+            kbd = Keyboard(usb_hid.devices)
+            layout = KeyboardLayoutUS(kbd)
+            keycode = Keycode
+
+            self.kbd = kbd
+            self.layout = layout
+        else:
+            try:
+                layout = __import__(f"keyboard_layout_{platform}_{language}")
+                keycode = __import__(f"keycode_{platform}_{language}").Keycode
+            except ImportError:
+                raise ValueError(
+                    f"Language {language} not supported for platform {platform}"
+                )
+            self.kbd = Keyboard(usb_hid.devices)
+            self.layout = layout.KeyboardLayout(self.kbd)
 
         self.KEYCODES = {
-            "WINDOWS": keycode.Keycode.WINDOWS,
-            "GUI": keycode.Keycode.GUI,
-            "APP": keycode.Keycode.APPLICATION,
-            "MENU": keycode.Keycode.APPLICATION,
-            "SHIFT": keycode.Keycode.SHIFT,
-            "ALT": keycode.Keycode.ALT,
-            "CONTROL": keycode.Keycode.CONTROL,
-            "CTRL": keycode.Keycode.CONTROL,
-            "DOWNARROW": keycode.Keycode.DOWN_ARROW,
-            "DOWN": keycode.Keycode.DOWN_ARROW,
-            "LEFTARROW": keycode.Keycode.LEFT_ARROW,
-            "LEFT": keycode.Keycode.LEFT_ARROW,
-            "RIGHTARROW": keycode.Keycode.RIGHT_ARROW,
-            "RIGHT": keycode.Keycode.RIGHT_ARROW,
-            "UPARROW": keycode.Keycode.UP_ARROW,
-            "UP": keycode.Keycode.UP_ARROW,
-            "BREAK": keycode.Keycode.PAUSE,
-            "PAUSE": keycode.Keycode.PAUSE,
-            "CAPSLOCK": keycode.Keycode.CAPS_LOCK,
-            "DELETE": keycode.Keycode.DELETE,
-            "END": keycode.Keycode.END,
-            "ESC": keycode.Keycode.ESCAPE,
-            "ESCAPE": keycode.Keycode.ESCAPE,
-            "HOME": keycode.Keycode.HOME,
-            "INSERT": keycode.Keycode.INSERT,
-            "NUMLOCK": keycode.Keycode.KEYPAD_NUMLOCK,
-            "PAGEUP": keycode.Keycode.PAGE_UP,
-            "PAGEDOWN": keycode.Keycode.PAGE_DOWN,
-            "PRINTSCREEN": keycode.Keycode.PRINT_SCREEN,
-            "ENTER": keycode.Keycode.ENTER,
-            "SCROLLLOCK": keycode.Keycode.SCROLL_LOCK,
-            "SPACE": keycode.Keycode.SPACE,
-            "TAB": keycode.Keycode.TAB,
-            "BACKSPACE": keycode.Keycode.BACKSPACE,
-            "A": keycode.Keycode.A,
-            "B": keycode.Keycode.B,
-            "C": keycode.Keycode.C,
-            "D": keycode.Keycode.D,
-            "E": keycode.Keycode.E,
-            "F": keycode.Keycode.F,
-            "G": keycode.Keycode.G,
-            "H": keycode.Keycode.H,
-            "I": keycode.Keycode.I,
-            "J": keycode.Keycode.J,
-            "K": keycode.Keycode.K,
-            "L": keycode.Keycode.L,
-            "M": keycode.Keycode.M,
-            "N": keycode.Keycode.N,
-            "O": keycode.Keycode.O,
-            "P": keycode.Keycode.P,
-            "Q": keycode.Keycode.Q,
-            "R": keycode.Keycode.R,
-            "S": keycode.Keycode.S,
-            "T": keycode.Keycode.T,
-            "U": keycode.Keycode.U,
-            "V": keycode.Keycode.V,
-            "W": keycode.Keycode.W,
-            "X": keycode.Keycode.X,
-            "Y": keycode.Keycode.Y,
-            "Z": keycode.Keycode.Z,
-            "F1": keycode.Keycode.F1,
-            "F2": keycode.Keycode.F2,
-            "F3": keycode.Keycode.F3,
-            "F4": keycode.Keycode.F4,
-            "F5": keycode.Keycode.F5,
-            "F6": keycode.Keycode.F6,
-            "F7": keycode.Keycode.F7,
-            "F8": keycode.Keycode.F8,
-            "F9": keycode.Keycode.F9,
-            "F10": keycode.Keycode.F10,
-            "F11": keycode.Keycode.F11,
-            "F12": keycode.Keycode.F12,
+            "WINDOWS": keycode.WINDOWS,
+            "GUI": keycode.GUI,
+            "APP": keycode.APPLICATION,
+            "MENU": keycode.APPLICATION,
+            "SHIFT": keycode.SHIFT,
+            "ALT": keycode.ALT,
+            "CONTROL": keycode.CONTROL,
+            "CTRL": keycode.CONTROL,
+            "DOWNARROW": keycode.DOWN_ARROW,
+            "DOWN": keycode.DOWN_ARROW,
+            "LEFTARROW": keycode.LEFT_ARROW,
+            "LEFT": keycode.LEFT_ARROW,
+            "RIGHTARROW": keycode.RIGHT_ARROW,
+            "RIGHT": keycode.RIGHT_ARROW,
+            "UPARROW": keycode.UP_ARROW,
+            "UP": keycode.UP_ARROW,
+            "BREAK": keycode.PAUSE,
+            "PAUSE": keycode.PAUSE,
+            "CAPSLOCK": keycode.CAPS_LOCK,
+            "DELETE": keycode.DELETE,
+            "END": keycode.END,
+            "ESC": keycode.ESCAPE,
+            "ESCAPE": keycode.ESCAPE,
+            "HOME": keycode.HOME,
+            "INSERT": keycode.INSERT,
+            "NUMLOCK": keycode.KEYPAD_NUMLOCK,
+            "PAGEUP": keycode.PAGE_UP,
+            "PAGEDOWN": keycode.PAGE_DOWN,
+            "PRINTSCREEN": keycode.PRINT_SCREEN,
+            "ENTER": keycode.ENTER,
+            "SCROLLLOCK": keycode.SCROLL_LOCK,
+            "SPACE": keycode.SPACE,
+            "TAB": keycode.TAB,
+            "BACKSPACE": keycode.BACKSPACE,
+            "A": keycode.A,
+            "B": keycode.B,
+            "C": keycode.C,
+            "D": keycode.D,
+            "E": keycode.E,
+            "F": keycode.F,
+            "G": keycode.G,
+            "H": keycode.H,
+            "I": keycode.I,
+            "J": keycode.J,
+            "K": keycode.K,
+            "L": keycode.L,
+            "M": keycode.M,
+            "N": keycode.N,
+            "O": keycode.O,
+            "P": keycode.P,
+            "Q": keycode.Q,
+            "R": keycode.R,
+            "S": keycode.S,
+            "T": keycode.T,
+            "U": keycode.U,
+            "V": keycode.V,
+            "W": keycode.W,
+            "X": keycode.X,
+            "Y": keycode.Y,
+            "Z": keycode.Z,
+            "F1": keycode.F1,
+            "F2": keycode.F2,
+            "F3": keycode.F3,
+            "F4": keycode.F4,
+            "F5": keycode.F5,
+            "F6": keycode.F6,
+            "F7": keycode.F7,
+            "F8": keycode.F8,
+            "F9": keycode.F9,
+            "F10": keycode.F10,
+            "F11": keycode.F11,
+            "F12": keycode.F12,
         }
 
     def type_string(self, string):
@@ -105,3 +115,4 @@ class RasperDuckyKeyboard:
 
     def release_all(self):
         self.kbd.release_all()
+

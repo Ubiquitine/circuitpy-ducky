@@ -16,7 +16,12 @@ class Tok:
 
     WAIT_FOR_BUTTON_PRESS = "WAIT_FOR_BUTTON_PRESS"
 
+    BUTTON_DEF = "BUTTON_DEF"
+    END_BUTTON = "END_BUTTON"
+
     LED_G = "LED_G"
+    LED_R = "LED_R"
+    LED_B = "LED_B"
     LED_OFF = "LED_OFF"
     
     HOLD = "HOLD"
@@ -139,7 +144,11 @@ class Lexer:
         "HOLD": Tok.HOLD,
         "RELEASE": Tok.RELEASE,
         "WAIT_FOR_BUTTON_PRESS": Tok.WAIT_FOR_BUTTON_PRESS,
+        "BUTTON_DEF": Tok.BUTTON_DEF,
+        "END_BUTTON": Tok.END_BUTTON,
         "LED_G": Tok.LED_G,
+        "LED_R": Tok.LED_R,
+        "LED_B": Tok.LED_B,
         "LED_OFF": Tok.LED_OFF,
         "RANDOM_LOWERCASE_LETTER": Tok.RANDOM_CHAR,
         "RANDOM_UPPERCASE_LETTER": Tok.RANDOM_CHAR,
