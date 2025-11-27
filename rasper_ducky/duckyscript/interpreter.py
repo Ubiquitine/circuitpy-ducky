@@ -97,12 +97,12 @@ class Interpreter:
         "RANDOM_CHAR": "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()",
     }
 
-    def __init__(self, buttonPin):
+    def __init__(self, button):
         self.variables = {}
         self.functions = {}
         self.execution_stack = []
         self.keyboard = RasperDuckyKeyboard("win", "us")
-        self.button = Button(buttonPin)
+        self.button = button
         self.led = LED()
         self.eval_stack = []
         self.value_stack = []

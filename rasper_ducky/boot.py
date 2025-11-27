@@ -1,14 +1,12 @@
-import board
-import digitalio
 import storage
+from duckyscript.button import Button
 
 # Enable payload execution
 ARMED=False
 
-NO_STORAGE_PIN = digitalio.DigitalInOut(board.GP29)
-NO_STORAGE_PIN.switch_to_input(pull=digitalio.Pull.UP)
-no_storage_status = NO_STORAGE_PIN.value
+btn_pin = Button.get_button_pin()
+btn = Button(btn_pin)
 
-no_storage = no_storage_status
+no_storage = not btn.is_pressed()
 if no_storage and ARMED:
     storage.disable_usb_drive()

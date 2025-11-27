@@ -1,15 +1,13 @@
 import time
-import digitalio
-import board
 import storage
-
+from duckyscript.button import Button
 # sleep at the start to allow the device to be recognized by the host computer
 time.sleep(0.5)
 
-btn = digitalio.DigitalInOut(board.GP29)
-btn.switch_to_input(pull=digitalio.Pull.UP)
-safe_mode_status = btn.value
-safe_mode = not safe_mode_status
+btn_pin = Button.get_button_pin()
+btn = Button(btn_pin)
+safe_mode = btn.is_pressed()
+
 
 def execute(code: str):
     from duckyscript.lexer import Lexer
