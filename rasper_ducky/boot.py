@@ -4,8 +4,7 @@ from duckyscript.button import Button
 # Enable payload execution
 ARMED=False
 
-btn_pin = Button.get_button_pin()
-btn = Button(btn_pin)
+btn = Button()
 
 no_storage = not btn.is_pressed()
 if no_storage and ARMED:
