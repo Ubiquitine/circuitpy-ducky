@@ -75,8 +75,8 @@ class Interpreter:
         'variables', 'functions', 'execution_stack', 'keyboard', 
         'button', 'led', 'eval_stack', 'value_stack', 'stmt_stack',
         'button_handler', 'button_wait_active', 'button_last_state',
-        'button_ignore_until_released', '_binary_ops', '_unary_ops',
-        '_random_charsets'
+        'button_ignore_until_released', '_BINARY_OPERATORS', '_UNARY_OPERATORS',
+        '_RANDOM_CHAR_SETS'
     )
 
     def __init__(self):
@@ -95,7 +95,7 @@ class Interpreter:
         self.button_ignore_until_released = False
 
         # Pre-cache operator lookups in instance for faster access
-        self._binary_ops = {
+        self._BINARY_OPERATORS = {
             Tok.OP_PLUS: lambda l, r: l + r,
             Tok.OP_MINUS: lambda l, r: l - r,
             Tok.OP_MULTIPLY: lambda l, r: l * r,
@@ -114,13 +114,13 @@ class Interpreter:
             Tok.OP_SHIFT_RIGHT: lambda l, r: l >> r,
         }
 
-        self._unary_ops = {
+        self._UNARY_OPERATORS = {
             Tok.OP_MINUS: lambda l: -l,
             Tok.OP_PLUS: lambda l: l,
             Tok.OP_NOT: lambda l: not l,
         }
 
-        self._random_charsets = {
+        self._RANDOM_CHAR_SETS = {
             "RANDOM_LOWERCASE_LETTER": "abcdefghijklmnopqrstuvwxyz",
             "RANDOM_UPPERCASE_LETTER": "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
             "RANDOM_LETTER": "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ",
@@ -267,7 +267,7 @@ class Interpreter:
 
     def _execute_random_char(self, node):
         node_type_value = node.type.value
-        charsets = self._random_charsets
+        charsets = self._RANDOM_CHAR_SETS
         if node_type_value not in charsets:
             raise RuntimeError("Unknown random character set: " + node_type_value)
         self.keyboard.type_string(random.choice(charsets[node_type_value]))
@@ -360,7 +360,7 @@ class Interpreter:
 
     def _apply_operator(self, operator, left, right):
         op_type = operator.type
-        binary_ops = self._binary_ops
+        binary_ops = self._BINARY_OPERATORS
         if op_type in binary_ops:
             return binary_ops[op_type](left, right)
         elif operator.value == "=":
@@ -370,7 +370,7 @@ class Interpreter:
 
     def _apply_unary_operator(self, operator, value):
         op_type = operator.type
-        unary_ops = self._unary_ops
+        unary_ops = self._UNARY_OPERATORS
         if op_type in unary_ops:
             return unary_ops[op_type](value)
         else:
