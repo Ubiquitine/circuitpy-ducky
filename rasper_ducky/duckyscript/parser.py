@@ -639,13 +639,13 @@ class Parser:
         if self.check(tok_type):
             return self.advance()
         peek = self.peek()
-        raise SyntaxError(message, peek.line, peek.column)
+        raise SyntaxError(message + " at line " + str(peek.line) + ", column " + str(peek.column))
 
     def consume_termination(self, message):
         if self.is_at_end() or self.check(Tok.EOL):
             return self.advance()
         peek = self.peek()
-        raise SyntaxError(message, peek.line, peek.column)
+        raise SyntaxError(message + " at line " + str(peek.line) + ", column " + str(peek.column))
 
     def synchronize(self):
         advance = self.advance

@@ -21,7 +21,7 @@ def execute(code: str):
     
     del preprocessor, lexer, tokens, parser, ast, interpreter
 
-if storage.getmount("/").readonly:
+if storage.getmount("/").readonly: # type: ignore
     from duckyscript.led import LED
     led = LED()
     print("SAFE MODE. Not executing payload.")
