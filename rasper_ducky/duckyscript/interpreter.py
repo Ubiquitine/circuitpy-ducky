@@ -248,6 +248,8 @@ class Interpreter:
 
     def _execute_delay(self, node):
         delay_val = self._evaluate(node.value)
+        if delay_val is None:
+            raise RuntimeError("DELAY expects a number, got: None")
         try:
             ms = int(delay_val)
         except:
