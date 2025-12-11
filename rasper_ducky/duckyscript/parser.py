@@ -475,9 +475,9 @@ class Parser:
         is_at_end = self.is_at_end
         statement = self.statement
 
-        while (not check(Tok.END_IF) and not check(Tok.ELSE_IF) and 
-               not check(Tok.ELSE) and not check(Tok.END_WHILE) and 
-               not check(Tok.END_FUNCTION) and not check(Tok.END_BUTTON) and 
+        while (not check(Tok.END_IF) and not check(Tok.ELSE_IF) and
+               not check(Tok.ELSE) and not check(Tok.END_WHILE) and
+               not check(Tok.END_FUNCTION) and not check(Tok.END_BUTTON) and
                not is_at_end()):
             append(statement())
         return statements
@@ -599,7 +599,7 @@ class Parser:
 
     def error(self, token, message):
         return SyntaxError(
-            "Unexpected token " + str(token.type) + " at line " + 
+            "Unexpected token " + str(token.type) + " at line " +
             str(token.line) + ", column " + str(token.column) + ": " + message
         )
 
@@ -659,9 +659,9 @@ class Parser:
                 return
 
             peek_type = peek().type
-            if (peek_type == Tok.IF or peek_type == Tok.WHILE or 
-                peek_type == Tok.PRINTSTRING or peek_type == Tok.PRINTSTRINGLN or 
-                peek_type == Tok.DELAY or peek_type == Tok.FUNCTION or 
+            if (peek_type == Tok.IF or peek_type == Tok.WHILE or
+                peek_type == Tok.PRINTSTRING or peek_type == Tok.PRINTSTRINGLN or
+                peek_type == Tok.DELAY or peek_type == Tok.FUNCTION or
                 peek_type == Tok.RETURN or peek_type == Tok.KEYPRESS):
                 return
             advance()

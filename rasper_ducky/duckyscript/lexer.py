@@ -88,7 +88,7 @@ class Token:
 
 
 class Lexer:
-    __slots__ = ('code', 'start', 'current', 'line', 'line_start', 'end', 
+    __slots__ = ('code', 'start', 'current', 'line', 'line_start', 'end',
                  '_OPERATORS', '_KEYWORDS', '_OPERATORS_SET', '_ALPHA_EXTRAS',
                  '_STRING_TOKEN_TYPES', '_has_isupper')
 
@@ -247,7 +247,7 @@ class Lexer:
             return False
         current = self.current
         code = self.code
-        return (code.startswith("EM", current) and 
+        return (code.startswith("EM", current) and
                 not code.startswith("EM_BLOCK", current))
 
     def is_comment_block(self, char):
@@ -371,13 +371,13 @@ class Lexer:
 
     def unexpected_character(self, char):
         return SyntaxError(
-            "Unexpected character: '" + char + "' at line " + 
+            "Unexpected character: '" + char + "' at line " +
             str(self.line) + ", column " + str(self.column())
         )
 
     def unexpected_none(self):
         return SyntaxError(
-            "Unexpected None character at line " + str(self.line) + 
+            "Unexpected None character at line " + str(self.line) +
             ", column " + str(self.column())
         )
 

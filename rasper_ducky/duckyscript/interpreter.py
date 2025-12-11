@@ -72,7 +72,7 @@ class AssignTask:
 
 class Interpreter:
     __slots__ = (
-        'variables', 'functions', 'execution_stack', 'keyboard', 
+        'variables', 'functions', 'execution_stack', 'keyboard',
         'button', 'led', 'eval_stack', 'value_stack', 'stmt_stack',
         'button_handler', 'button_wait_active', 'button_last_state',
         'button_ignore_until_released', '_BINARY_OPERATORS', '_UNARY_OPERATORS',
