@@ -9,7 +9,7 @@ def execute(code: str):
     from duckyscript.parser import Parser
     from duckyscript.interpreter import Interpreter
     from duckyscript.preprocessor import Preprocessor
-    
+
     preprocessor = Preprocessor()
     code = preprocessor.process(code)
     lexer = Lexer(code)
@@ -18,10 +18,10 @@ def execute(code: str):
     ast = parser.parse()
     interpreter = Interpreter()
     interpreter.interpret(ast)
-    
+
     del preprocessor, lexer, tokens, parser, ast, interpreter
 
-if storage.getmount("/").readonly:
+if storage.getmount("/").readonly: # type: ignore
     from duckyscript.led import LED
     led = LED()
     print("SAFE MODE. Not executing payload.")

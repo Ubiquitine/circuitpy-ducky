@@ -13,44 +13,33 @@ class Tok:
     REM = "REM"
     REM_BLOCK = "REM_BLOCK"
     END_REM_BLOCK = "END_REM_BLOCK"
-
     WAIT_FOR_BUTTON_PRESS = "WAIT_FOR_BUTTON_PRESS"
-
     BUTTON_DEF = "BUTTON_DEF"
     END_BUTTON = "END_BUTTON"
-
     LED_G = "LED_G"
     LED_R = "LED_R"
     LED_B = "LED_B"
     LED_OFF = "LED_OFF"
-    
     HOLD = "HOLD"
     RELEASE = "RELEASE"
-
     RANDOM_CHAR = "RANDOM_CHAR"
     RANDOM_CHAR_FROM = "RANDOM_CHAR_FROM"
-
     ATTACKMODE = "ATTACKMODE"
     HID = "HID"
     STORAGE = "STORAGE"
     OFF = "OFF"
-
     IF = "IF"
     THEN = "THEN"
     END_IF = "END_IF"
     ELSE = "ELSE"
     ELSE_IF = "ELSE_IF"
-
     WHILE = "WHILE"
     END_WHILE = "END_WHILE"
-
     LPAREN = "LPAREN"
     RPAREN = "RPAREN"
-
     FUNCTION = "FUNCTION"
     END_FUNCTION = "END_FUNCTION"
     RETURN = "RETURN"
-
     # OPERATORS
     OP_SHIFT_LEFT = "OP_SHIFT_LEFT"
     OP_SHIFT_RIGHT = "OP_SHIFT_RIGHT"
@@ -71,13 +60,11 @@ class Tok:
     OP_POWER = "OP_POWER"
     OP_NOT = "OP_NOT"
     OP_AND = "OP_AND"
-
     # LITERALS
     STRING = "STRING"
     NUMBER = "NUMBER"
     TRUE = "TRUE"
     FALSE = "FALSE"
-
     # CUSTOM RASPER DUCKY COMMANDS (non rubber ducky standards)
     RD_KBD = "RD_KBD"
     RD_KBD_PLATFORM = "RD_KBD_PLATFORM"
@@ -85,350 +72,392 @@ class Tok:
 
 
 class Token:
-    def __init__(self, type: str, value: str = "", line: int = 0, column: int = 0):
-        self.type = type
+    __slots__ = ('type', 'value', 'line', 'column')
+
+    def __init__(self, tok_type, value="", line=0, column=0):
+        self.type = tok_type
         self.value = value
         self.line = line
         self.column = column
 
     def __eq__(self, other):
-        return self.__repr__() == other.__repr__()
+        return repr(self) == repr(other)
 
-    def __repr__(self) -> str:
-        return f"TOKEN({self.type}, {self.value}, {self.line}, {self.column})"
+    def __repr__(self):
+        return "TOKEN(" + self.type + ", " + self.value + ", " + str(self.line) + ", " + str(self.column) + ")"
 
 
 class Lexer:
-    OPERATORS = {
-        "=": Tok.ASSIGN,
-        "==": Tok.OP_EQUAL,
-        "!=": Tok.OP_NOT_EQUAL,
-        ">": Tok.OP_GREATER,
-        "<": Tok.OP_LESS,
-        ">=": Tok.OP_GREATER_EQUAL,
-        "<=": Tok.OP_LESS_EQUAL,
-        "&&": Tok.OP_AND,
-        "||": Tok.OP_OR,
-        "!": Tok.OP_NOT,
-        "+": Tok.OP_PLUS,
-        "-": Tok.OP_MINUS,
-        "*": Tok.OP_MULTIPLY,
-        "/": Tok.OP_DIVIDE,
-        "%": Tok.OP_MODULO,
-        "^": Tok.OP_POWER,
-        "&": Tok.OP_BITWISE_AND,
-        "|": Tok.OP_BITWISE_OR,
-        "<<": Tok.OP_SHIFT_LEFT,
-        ">>": Tok.OP_SHIFT_RIGHT,
-        "(": Tok.LPAREN,
-        ")": Tok.RPAREN,
-    }
+    __slots__ = ('code', 'start', 'current', 'line', 'line_start', 'end',
+                 '_OPERATORS', '_KEYWORDS', '_OPERATORS_SET', '_ALPHA_EXTRAS',
+                 '_STRING_TOKEN_TYPES', '_has_isupper')
 
-    OPERATORS_SET = set("=><!|+-*/%^&()")
-
-    ALPHA_EXTRAS = set("$_")
-
-    KEYWORDS = {
-        "RD_KBD": Tok.RD_KBD,
-        "VAR": Tok.VAR,
-        "IF": Tok.IF,
-        "THEN": Tok.THEN,
-        "END_IF": Tok.END_IF,
-        "ELSE": Tok.ELSE,
-        "ELSE IF": Tok.ELSE_IF,
-        "WHILE": Tok.WHILE,
-        "END_WHILE": Tok.END_WHILE,
-        "DELAY": Tok.DELAY,
-        "STRING": Tok.PRINTSTRING,
-        "STRINGLN": Tok.PRINTSTRINGLN,
-        "HOLD": Tok.HOLD,
-        "RELEASE": Tok.RELEASE,
-        "WAIT_FOR_BUTTON_PRESS": Tok.WAIT_FOR_BUTTON_PRESS,
-        "BUTTON_DEF": Tok.BUTTON_DEF,
-        "END_BUTTON": Tok.END_BUTTON,
-        "LED_G": Tok.LED_G,
-        "LED_R": Tok.LED_R,
-        "LED_B": Tok.LED_B,
-        "LED_OFF": Tok.LED_OFF,
-        "RANDOM_LOWERCASE_LETTER": Tok.RANDOM_CHAR,
-        "RANDOM_UPPERCASE_LETTER": Tok.RANDOM_CHAR,
-        "RANDOM_LETTER": Tok.RANDOM_CHAR,
-        "RANDOM_NUMBER": Tok.RANDOM_CHAR,
-        "RANDOM_SPECIAL": Tok.RANDOM_CHAR,
-        "RANDOM_CHAR": Tok.RANDOM_CHAR,
-        "RANDOM_CHAR_FROM": Tok.RANDOM_CHAR_FROM,
-        "ATTACKMODE": Tok.ATTACKMODE,
-        "HID": Tok.HID,
-        "STORAGE": Tok.STORAGE,
-        "OFF": Tok.OFF,
-        "FUNCTION": Tok.FUNCTION,
-        "END_FUNCTION": Tok.END_FUNCTION,
-        "RETURN": Tok.RETURN,
-        "TRUE": Tok.TRUE,
-        "FALSE": Tok.FALSE,
-        "REM": Tok.REM,
-        "REM_BLOCK": Tok.REM_BLOCK,
-        "END_REM": Tok.END_REM_BLOCK,
-        "WINDOWS": Tok.KEYPRESS,
-        "GUI": Tok.KEYPRESS,
-        "APP": Tok.KEYPRESS,
-        "MENU": Tok.KEYPRESS,
-        "SHIFT": Tok.KEYPRESS,
-        "ALT": Tok.KEYPRESS,
-        "CONTROL": Tok.KEYPRESS,
-        "CTRL": Tok.KEYPRESS,
-        "DOWNARROW": Tok.KEYPRESS,
-        "DOWN": Tok.KEYPRESS,
-        "LEFTARROW": Tok.KEYPRESS,
-        "LEFT": Tok.KEYPRESS,
-        "RIGHTARROW": Tok.KEYPRESS,
-        "RIGHT": Tok.KEYPRESS,
-        "UPARROW": Tok.KEYPRESS,
-        "UP": Tok.KEYPRESS,
-        "BREAK": Tok.KEYPRESS,
-        "PAUSE": Tok.KEYPRESS,
-        "CAPSLOCK": Tok.KEYPRESS,
-        "DELETE": Tok.KEYPRESS,
-        "END": Tok.KEYPRESS,
-        "ESCAPE": Tok.KEYPRESS,
-        "ESC": Tok.KEYPRESS,
-        "HOME": Tok.KEYPRESS,
-        "INSERT": Tok.KEYPRESS,
-        "NUMLOCK": Tok.KEYPRESS,
-        "PAGEUP": Tok.KEYPRESS,
-        "PAGEDOWN": Tok.KEYPRESS,
-        "PRINTSCREEN": Tok.KEYPRESS,
-        "ENTER": Tok.KEYPRESS,
-        "SCROLLLOCK": Tok.KEYPRESS,
-        "SPACE": Tok.KEYPRESS,
-        "TAB": Tok.KEYPRESS,
-        "BACKSPACE": Tok.KEYPRESS,
-        "F12": Tok.KEYPRESS,
-        "F11": Tok.KEYPRESS,
-        "F10": Tok.KEYPRESS,
-        "F9": Tok.KEYPRESS,
-        "F8": Tok.KEYPRESS,
-        "F7": Tok.KEYPRESS,
-        "F6": Tok.KEYPRESS,
-        "F5": Tok.KEYPRESS,
-        "F4": Tok.KEYPRESS,
-        "F3": Tok.KEYPRESS,
-        "F2": Tok.KEYPRESS,
-        "F1": Tok.KEYPRESS,
-        "A": Tok.KEYPRESS,
-        "B": Tok.KEYPRESS,
-        "C": Tok.KEYPRESS,
-        "D": Tok.KEYPRESS,
-        "E": Tok.KEYPRESS,
-        "F": Tok.KEYPRESS,
-        "G": Tok.KEYPRESS,
-        "H": Tok.KEYPRESS,
-        "I": Tok.KEYPRESS,
-        "J": Tok.KEYPRESS,
-        "K": Tok.KEYPRESS,
-        "L": Tok.KEYPRESS,
-        "M": Tok.KEYPRESS,
-        "N": Tok.KEYPRESS,
-        "O": Tok.KEYPRESS,
-        "P": Tok.KEYPRESS,
-        "Q": Tok.KEYPRESS,
-        "R": Tok.KEYPRESS,
-        "S": Tok.KEYPRESS,
-        "T": Tok.KEYPRESS,
-        "U": Tok.KEYPRESS,
-        "V": Tok.KEYPRESS,
-        "W": Tok.KEYPRESS,
-        "X": Tok.KEYPRESS,
-        "Y": Tok.KEYPRESS,
-        "Z": Tok.KEYPRESS,
-    }
-
-    def __init__(self, code: str):
+    def __init__(self, code):
         self.code = code
-        self.current = 0
         self.start = 0
+        self.current = 0
         self.line = 1
         self.line_start = 0
         self.end = len(code)
 
+        # Detect if isupper() is available (only method that might be missing)
+        try:
+            "A".isupper()
+            self._has_isupper = True
+        except AttributeError:
+            self._has_isupper = False
+
+        # Cache lookups in instance for faster access
+        self._OPERATORS = {
+            "=": Tok.ASSIGN,
+            "==": Tok.OP_EQUAL,
+            "!=": Tok.OP_NOT_EQUAL,
+            ">": Tok.OP_GREATER,
+            "<": Tok.OP_LESS,
+            ">=": Tok.OP_GREATER_EQUAL,
+            "<=": Tok.OP_LESS_EQUAL,
+            "&&": Tok.OP_AND,
+            "||": Tok.OP_OR,
+            "!": Tok.OP_NOT,
+            "+": Tok.OP_PLUS,
+            "-": Tok.OP_MINUS,
+            "*": Tok.OP_MULTIPLY,
+            "/": Tok.OP_DIVIDE,
+            "%": Tok.OP_MODULO,
+            "^": Tok.OP_POWER,
+            "&": Tok.OP_BITWISE_AND,
+            "|": Tok.OP_BITWISE_OR,
+            "<<": Tok.OP_SHIFT_LEFT,
+            ">>": Tok.OP_SHIFT_RIGHT,
+            "(": Tok.LPAREN,
+            ")": Tok.RPAREN,
+        }
+
+        self._OPERATORS_SET = frozenset("=><!)+-*/%^&|(")
+
+        self._KEYWORDS = {
+            "VAR": Tok.VAR,
+            "DELAY": Tok.DELAY,
+            "STRING": Tok.PRINTSTRING,
+            "STRINGLN": Tok.PRINTSTRINGLN,
+            "ATTACKMODE": Tok.ATTACKMODE,
+            "HID": Tok.HID,
+            "STORAGE": Tok.STORAGE,
+            "OFF": Tok.OFF,
+            "IF": Tok.IF,
+            "THEN": Tok.THEN,
+            "END_IF": Tok.END_IF,
+            "ELSE": Tok.ELSE,
+            "ELSE_IF": Tok.ELSE_IF,
+            "WHILE": Tok.WHILE,
+            "END_WHILE": Tok.END_WHILE,
+            "FUNCTION": Tok.FUNCTION,
+            "END_FUNCTION": Tok.END_FUNCTION,
+            "RETURN": Tok.RETURN,
+            "TRUE": Tok.TRUE,
+            "FALSE": Tok.FALSE,
+            "AND": Tok.OP_AND,
+            "OR": Tok.OP_OR,
+            "NOT": Tok.OP_NOT,
+            "HOLD": Tok.HOLD,
+            "RELEASE": Tok.RELEASE,
+            "RANDOM_LOWERCASE_LETTER": Tok.RANDOM_CHAR,
+            "RANDOM_UPPERCASE_LETTER": Tok.RANDOM_CHAR,
+            "RANDOM_LETTER": Tok.RANDOM_CHAR,
+            "RANDOM_NUMBER": Tok.RANDOM_CHAR,
+            "RANDOM_SPECIAL": Tok.RANDOM_CHAR,
+            "RANDOM_CHAR": Tok.RANDOM_CHAR,
+            "RANDOM_CHAR_FROM": Tok.RANDOM_CHAR_FROM,
+            "WAIT_FOR_BUTTON_PRESS": Tok.WAIT_FOR_BUTTON_PRESS,
+            "BUTTON_DEF": Tok.BUTTON_DEF,
+            "END_BUTTON": Tok.END_BUTTON,
+            "LED_G": Tok.LED_G,
+            "LED_R": Tok.LED_R,
+            "LED_B": Tok.LED_B,
+            "LED_OFF": Tok.LED_OFF,
+            "RD_KBD": Tok.RD_KBD,
+        }
+
+        # Include $ and # for variables and defines
+        self._ALPHA_EXTRAS = frozenset("_$#")
+
+        # Pre-cache token types that need string parsing
+        self._STRING_TOKEN_TYPES = frozenset([Tok.PRINTSTRING, Tok.PRINTSTRINGLN, Tok.RANDOM_CHAR_FROM])
+
     def is_at_end(self):
         return self.current >= self.end
 
-    def advance(self) -> str:
-        if not self.is_at_end():
-            self.current += 1
-        return self.code[self.current - 1]
+    def advance(self):
+        current = self.current
+        if current < self.end:
+            self.current = current + 1
+            return self.code[current]
+        return None
 
-    def previous(self) -> str | None:
-        return self.code[self.current - 1] if self.current > 0 else None
+    def previous(self):
+        current = self.current
+        return self.code[current - 1] if current > 0 else None
 
-    def peek(self) -> str | None:
-        return self.code[self.current] if not self.is_at_end() else None
+    def peek(self):
+        current = self.current
+        return self.code[current] if current < self.end else None
 
-    def peek_next(self) -> str | None:
-        return self.code[self.current + 1] if self.current + 1 < self.end else None
+    def peek_next(self):
+        current = self.current + 1
+        return self.code[current] if current < self.end else None
 
-    def match(self, expected: str):
-        if self.is_at_end() or not self.code.startswith(expected, self.current):
+    def match(self, expected):
+        current = self.current
+        code = self.code
+        if current >= self.end or not code.startswith(expected, current):
             return False
-        self.current += len(expected)
+        self.current = current + len(expected)
         return True
 
     def tokenize(self):
         previous_token = None
-        while not self.is_at_end():
+        is_at_end = self.is_at_end
+        scan_token = self.scan_token
+
+        while not is_at_end():
             self.start = self.current
-            previous_token = self.scan_token(previous_token)
+            previous_token = scan_token(previous_token)
             if previous_token:
                 yield previous_token
         yield Token(Tok.EOF)
 
-    def is_digit(self, char: str | None):
-        return char.isdigit() if char else False
+    def is_digit(self, char):
+        return char is not None and char.isdigit()
 
-    def is_alpha(self, char: str | None):
-        return char.isalpha() or char in self.ALPHA_EXTRAS if char else False
+    def is_alpha(self, char):
+        if char is None:
+            return False
+        return char.isalpha() or char in self._ALPHA_EXTRAS
 
-    def is_alphanumeric(self, char: str | None):
+    def is_alphanumeric(self, char):
+        if char is None:
+            return False
         return self.is_digit(char) or self.is_alpha(char)
 
-    def is_operator(self, char: str | None):
-        return char in self.OPERATORS_SET if char else False
+    def is_operator(self, char):
+        return char in self._OPERATORS_SET if char else False
 
-    def is_comment(self, char: str | None):
+    def is_comment(self, char):
         if char != "R":
             return False
-        return (
-            self.code.startswith("EM", self.current)
-            and not self.code.startswith("EM_BLOCK", self.current)
-        )
+        current = self.current
+        code = self.code
+        return (code.startswith("EM", current) and
+                not code.startswith("EM_BLOCK", current))
 
-    def is_comment_block(self, char: str | None):
+    def is_comment_block(self, char):
         if char != "R":
             return False
         return self.code.startswith("EM_BLOCK", self.current)
 
     def number(self):
-        while self.is_digit(self.peek()):
-            self.advance()
+        peek = self.peek
+        is_digit = self.is_digit
+        advance = self.advance
 
-        if self.peek() == "." and self.is_digit(self.peek_next()):
-            self.advance()
-            while self.is_digit(self.peek()):
-                self.advance()
+        while is_digit(peek()):
+            advance()
 
-        return self.token(Tok.NUMBER, self.code[self.start : self.current])
+        # Check for decimal
+        p = peek()
+        if p == "." and is_digit(self.peek_next()):
+            advance()
+            while is_digit(peek()):
+                advance()
+
+        return self.token(Tok.NUMBER, self.code[self.start:self.current])
 
     def string(self):
         # Skip the first space between STRING or STRINGLN and the string
         self.start += 1
-        self.advance_while(lambda c: c != "\n")
-        return self.token(Tok.STRING, self.code[self.start : self.current].strip())
+        code = self.code
+        current = self.current
+        end = self.end
+
+        # Fast forward to newline
+        while current < end and code[current] != "\n":
+            current += 1
+        self.current = current
+
+        return self.token(Tok.STRING, code[self.start:current].strip())
 
     def kbd_platform(self):
         self.start += 1
-        self.advance_while(lambda c: c != " ")
-        return self.token(
-            Tok.RD_KBD_PLATFORM, self.code[self.start : self.current].strip()
-        )
+        code = self.code
+        current = self.current
+        end = self.end
+
+        # Fast forward to space
+        while current < end and code[current] != " ":
+            current += 1
+        self.current = current
+
+        return self.token(Tok.RD_KBD_PLATFORM, code[self.start:current].strip())
 
     def kbd_language(self):
         self.start += 1
-        self.advance_while(lambda c: c != "\n")
-        return self.token(
-            Tok.RD_KBD_LANGUAGE, self.code[self.start : self.current].strip()
-        )
+        code = self.code
+        current = self.current
+        end = self.end
+
+        # Fast forward to newline
+        while current < end and code[current] != "\n":
+            current += 1
+        self.current = current
+
+        return self.token(Tok.RD_KBD_LANGUAGE, code[self.start:current].strip())
 
     def identifier(self):
-        while self.is_alphanumeric(self.peek()):
-            self.advance()
+        peek = self.peek
+        is_alphanumeric = self.is_alphanumeric
+        advance = self.advance
+        code = self.code
 
-        identifier = self.code[self.start : self.current]
-        keyword = self.KEYWORDS.get(identifier)
+        while is_alphanumeric(peek()):
+            advance()
 
-        if keyword == Tok.ELSE and self.peek() == " ":
-            self.advance_while(lambda c: c == " ")
+        identifier = code[self.start:self.current]
+        keywords = self._KEYWORDS
+        keyword = keywords.get(identifier)
+
+        # Check for ELSE IF
+        if keyword == Tok.ELSE and peek() == " ":
+            current = self.current
+            end = self.end
+            # Skip spaces
+            while current < end and code[current] == " ":
+                current += 1
+            self.current = current
+
             if self.match("IF"):
                 return self.token(Tok.ELSE_IF, "ELSE IF")
 
-        return self.token(keyword or Tok.IDENTIFIER, identifier)
+        # Check for keypresses (all uppercase identifiers without $ or #)
+        if keyword is None and "$" not in identifier and "#" not in identifier:
+            if self._has_isupper:
+                # Use fast built-in method
+                if identifier.isupper():
+                    return self.token(Tok.KEYPRESS, identifier)
+            else:
+                # CircuitPython fallback: manual check
+                is_upper = True
+                for c in identifier:
+                    if "a" <= c <= "z":
+                        is_upper = False
+                        break
+                if is_upper:
+                    return self.token(Tok.KEYPRESS, identifier)
+
+        return self.token(keyword if keyword else Tok.IDENTIFIER, identifier)
 
     def column(self):
         return self.start - self.line_start + 1
 
     def advance_while(self, condition):
-        while condition(self.peek()) and not self.is_at_end():
-            self.advance()
+        peek = self.peek
+        advance = self.advance
+        is_at_end = self.is_at_end
 
-    def unexpected_character(self, char: str):
+        while not is_at_end():
+            p = peek()
+            if not condition(p):
+                break
+            advance()
+
+    def unexpected_character(self, char):
         return SyntaxError(
-            f"Unexpected character: '{char}' at line {self.line}, column {self.column()}"
+            "Unexpected character: '" + char + "' at line " +
+            str(self.line) + ", column " + str(self.column())
         )
 
     def unexpected_none(self):
         return SyntaxError(
-            f"Unexpected None character at line {self.line}, column {self.column()}"
+            "Unexpected None character at line " + str(self.line) +
+            ", column " + str(self.column())
         )
 
-    def operator(self) -> Token:
-        prev, curr = self.previous(), self.peek()
-        double_char = f"{prev}{curr}" if prev and curr else None
+    def operator(self):
+        prev = self.previous()
+        curr = self.peek()
+        operators = self._OPERATORS
 
-        if double_char in self.OPERATORS:
-            self.advance()
-            return self.token(self.OPERATORS[double_char], double_char)
-        if prev in self.OPERATORS:
-            return self.token(self.OPERATORS[prev], prev)
+        # Try two-character operator first
+        if prev and curr:
+            double_char = prev + curr
+            if double_char in operators:
+                self.advance()
+                return self.token(operators[double_char], double_char)
+
+        # Try single-character operator
+        if prev in operators:
+            return self.token(operators[prev], prev)
 
         if prev is None:
             raise self.unexpected_none()
-
         raise self.unexpected_character(prev)
 
     def skip_comment(self):
         self.match("EM")  # Consume "EM"
-        self.advance_while(lambda c: c != "\n")
-        if self.peek() == "\n":
+        code = self.code
+        current = self.current
+        end = self.end
+
+        # Fast forward to newline
+        while current < end and code[current] != "\n":
+            current += 1
+        self.current = current
+
+        if current < end and code[current] == "\n":
             self.advance()
             self.eol()
 
     def skip_comment_block(self):
         self.match("EM_BLOCK")  # Consume "EM_BLOCK"
-        while not self.match("END_REM"):
+        match = self.match
+
+        while not match("END_REM"):
             self.skip_comment()
 
         if self.peek() == "\n":
             self.advance()
             self.eol()
 
-    def token(self, tok: str, value: str = ""):
-        return Token(tok, value, self.line, self.column())
+    def token(self, tok_type, value=""):
+        return Token(tok_type, value, self.line, self.column())
 
     def eol(self):
         self.line += 1
         self.line_start = self.current
         return Token(Tok.EOL)
 
-    def scan_token(self, previous: Token | None = None):
+    def scan_token(self, previous):
         char = self.advance()
 
+        # Handle empty lines
         if char == "\n" and self.start == self.line_start:
-            self.eol()  # Update line and line_start without yielding EOL
+            self.eol()
             return None
 
         if char == "\n":
             return self.eol()
-        elif previous and previous.type in {
-            Tok.PRINTSTRING,
-            Tok.PRINTSTRINGLN,
-            Tok.RANDOM_CHAR_FROM,
-        }:
-            return self.string()
-        elif previous and previous.type == Tok.RD_KBD:
-            return self.kbd_platform()
-        elif previous and previous.type == Tok.RD_KBD_PLATFORM:
-            return self.kbd_language()
-        elif self.is_operator(char):
+
+        # Context-dependent parsing based on previous token
+        if previous:
+            prev_type = previous.type
+            if prev_type in self._STRING_TOKEN_TYPES:
+                return self.string()
+            elif prev_type == Tok.RD_KBD:
+                return self.kbd_platform()
+            elif prev_type == Tok.RD_KBD_PLATFORM:
+                return self.kbd_language()
+
+        # Character type dispatch
+        if self.is_operator(char):
             return self.operator()
         elif self.is_digit(char):
             return self.number()
@@ -438,7 +467,7 @@ class Lexer:
             return self.skip_comment()
         elif self.is_alpha(char):
             return self.identifier()
-        elif char.isspace():
+        elif char and char.isspace():
             return None
 
         raise self.unexpected_character(char)

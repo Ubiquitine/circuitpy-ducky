@@ -39,12 +39,16 @@ from .parser import (
 
 class EvalTask:
     """Represents a task to evaluate an expression node"""
+    __slots__ = ('node',)
+
     def __init__(self, node):
         self.node = node
 
 
 class BinaryOpTask:
     """Represents a binary operation waiting for its operands"""
+    __slots__ = ('operator', 'left_value')
+
     def __init__(self, operator, left_value=None):
         self.operator = operator
         self.left_value = left_value
@@ -52,50 +56,28 @@ class BinaryOpTask:
 
 class UnaryOpTask:
     """Represents a unary operation waiting for its operand"""
+    __slots__ = ('operator',)
+
     def __init__(self, operator):
         self.operator = operator
 
 
 class AssignTask:
     """Represents an assignment waiting for its value"""
+    __slots__ = ('var_name',)
+
     def __init__(self, var_name):
         self.var_name = var_name
 
 
 class Interpreter:
-    BINARY_OPERATORS = {
-        Tok.OP_PLUS: lambda l, r: l + r,
-        Tok.OP_MINUS: lambda l, r: l - r,
-        Tok.OP_MULTIPLY: lambda l, r: l * r,
-        Tok.OP_DIVIDE: lambda l, r: l / r,
-        Tok.OP_LESS: lambda l, r: l < r,
-        Tok.OP_GREATER: lambda l, r: l > r,
-        Tok.OP_LESS_EQUAL: lambda l, r: l <= r,
-        Tok.OP_GREATER_EQUAL: lambda l, r: l >= r,
-        Tok.OP_EQUAL: lambda l, r: l == r,
-        Tok.OP_NOT_EQUAL: lambda l, r: l != r,
-        Tok.OP_AND: lambda l, r: l and r,
-        Tok.OP_OR: lambda l, r: l or r,
-        Tok.OP_BITWISE_AND: lambda l, r: l & r,
-        Tok.OP_BITWISE_OR: lambda l, r: l | r,
-        Tok.OP_SHIFT_LEFT: lambda l, r: l << r,
-        Tok.OP_SHIFT_RIGHT: lambda l, r: l >> r,
-    }
-
-    UNARY_OPERATORS = {
-        Tok.OP_MINUS: lambda l: -l,
-        Tok.OP_PLUS: lambda l: l,
-        Tok.OP_NOT: lambda l: not l,
-    }
-
-    RANDOM_CHAR_SETS = {
-        "RANDOM_LOWERCASE_LETTER": "abcdefghijklmnopqrstuvwxyz",
-        "RANDOM_UPPERCASE_LETTER": "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
-        "RANDOM_LETTER": "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ",
-        "RANDOM_NUMBER": "0123456789",
-        "RANDOM_SPECIAL": "!@#$%^&*()",
-        "RANDOM_CHAR": "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()",
-    }
+    __slots__ = (
+        'variables', 'functions', 'execution_stack', 'keyboard',
+        'button', 'led', 'eval_stack', 'value_stack', 'stmt_stack',
+        'button_handler', 'button_wait_active', 'button_last_state',
+        'button_ignore_until_released', '_BINARY_OPERATORS', '_UNARY_OPERATORS',
+        '_RANDOM_CHAR_SETS'
+    )
 
     def __init__(self):
         self.variables = {}
@@ -112,67 +94,114 @@ class Interpreter:
         self.button_last_state = False
         self.button_ignore_until_released = False
 
-    def interpret(self, ast: list[Stmt]):
+        # Pre-cache operator lookups in instance for faster access
+        self._BINARY_OPERATORS = {
+            Tok.OP_PLUS: lambda l, r: l + r,
+            Tok.OP_MINUS: lambda l, r: l - r,
+            Tok.OP_MULTIPLY: lambda l, r: l * r,
+            Tok.OP_DIVIDE: lambda l, r: l / r,
+            Tok.OP_LESS: lambda l, r: l < r,
+            Tok.OP_GREATER: lambda l, r: l > r,
+            Tok.OP_LESS_EQUAL: lambda l, r: l <= r,
+            Tok.OP_GREATER_EQUAL: lambda l, r: l >= r,
+            Tok.OP_EQUAL: lambda l, r: l == r,
+            Tok.OP_NOT_EQUAL: lambda l, r: l != r,
+            Tok.OP_AND: lambda l, r: l and r,
+            Tok.OP_OR: lambda l, r: l or r,
+            Tok.OP_BITWISE_AND: lambda l, r: l & r,
+            Tok.OP_BITWISE_OR: lambda l, r: l | r,
+            Tok.OP_SHIFT_LEFT: lambda l, r: l << r,
+            Tok.OP_SHIFT_RIGHT: lambda l, r: l >> r,
+        }
+
+        self._UNARY_OPERATORS = {
+            Tok.OP_MINUS: lambda l: -l,
+            Tok.OP_PLUS: lambda l: l,
+            Tok.OP_NOT: lambda l: not l,
+        }
+
+        self._RANDOM_CHAR_SETS = {
+            "RANDOM_LOWERCASE_LETTER": "abcdefghijklmnopqrstuvwxyz",
+            "RANDOM_UPPERCASE_LETTER": "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+            "RANDOM_LETTER": "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ",
+            "RANDOM_NUMBER": "0123456789",
+            "RANDOM_SPECIAL": "!@#$%^&*()",
+            "RANDOM_CHAR": "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()",
+        }
+
+    def interpret(self, ast):
         """Stack-based interpreter to avoid recursion limits"""
-        self.stmt_stack = list(reversed(ast))
+        # Use slicing instead of list(reversed(...))
+        stmt_stack = self.stmt_stack
+        stmt_stack[:] = ast[::-1]
 
-        while self.stmt_stack:
-            self._poll_button_handler()
-            node = self.stmt_stack.pop()
-            self._execute(node)
+        # Cache method lookups
+        pop_stmt = stmt_stack.pop
+        poll = self._poll_button_handler
+        execute = self._execute
 
-    def _execute(self, node: Stmt):
+        while stmt_stack:
+            poll()
+            node = pop_stmt()
+            execute(node)
+
+    def _execute(self, node):
         if node is None:
-            return  # silently skip
-        
-        if isinstance(node, VarStmt):
+            return
+
+        # Use type() for exact type checks (faster than isinstance in CircuitPython)
+        node_type = type(node)
+
+        if node_type is VarStmt:
             self._execute_var_declaration(node)
-        elif isinstance(node, IfStmt):
+        elif node_type is IfStmt:
             self._execute_if_statement(node)
-        elif isinstance(node, WhileStmt):
+        elif node_type is WhileStmt:
             self._execute_while_statement(node)
-        elif isinstance(node, StringStmt):
-            self._execute_print_string(node, newline=False)
-        elif isinstance(node, StringLnStmt):
-            self._execute_print_string(node, newline=True)
-        elif isinstance(node, DelayStmt):
+        elif node_type is StringStmt:
+            self._execute_print_string(node, False)
+        elif node_type is StringLnStmt:
+            self._execute_print_string(node, True)
+        elif node_type is DelayStmt:
             self._execute_delay(node)
-        elif isinstance(node, Binary):
-            self._execute_expression(node)
-        elif isinstance(node, FunctionStmt):
-            self._execute_function_declaration(node)
-        elif isinstance(node, KeyPressStmt):
+        elif node_type is Binary:
+            self._evaluate(node)
+        elif node_type is FunctionStmt:
+            self.functions[node.name.value] = node.body
+        elif node_type is KeyPressStmt:
             self._execute_keypress(node)
-        elif isinstance(node, KbdStmt):
-            self._execute_kbd(node)
-        elif isinstance(node, ExpressionStmt):
-            self._execute_expression(node.expression)
-        elif isinstance(node, RandomCharStmt):
+        elif node_type is KbdStmt:
+            self.keyboard = RasperDuckyKeyboard(
+                node.platform.value.lower(), node.language.value.lower()
+            )
+        elif node_type is ExpressionStmt:
+            self._evaluate(node.expression)
+        elif node_type is RandomCharStmt:
             self._execute_random_char(node)
-        elif isinstance(node, RandomCharFromStmt):
-            self._execute_random_char_from(node)
-        elif isinstance(node, WaitForButtonPressStmt):
-            self._execute_wait_for_button_press(node)
-        elif isinstance(node, LedGStmt):
-            self._execute_led_on(node, (0, 255, 0))
-        elif isinstance(node, LedRStmt):
-            self._execute_led_on(node, (255, 0, 0))
-        elif isinstance(node, LedBStmt):
-            self._execute_led_on(node, (0, 0, 255))
-        elif isinstance(node, LedOffStmt):
-            self._execute_led_off(node)
-        elif isinstance(node, ButtonDefStmt):
+        elif node_type is RandomCharFromStmt:
+            self.keyboard.type_string(random.choice(str(node.value.value)))
+        elif node_type is WaitForButtonPressStmt:
+            self.button_wait_active = True
+            self.button.wait_for_press()
+            self.button_wait_active = False
+            self.button_ignore_until_released = True
+        elif node_type is LedGStmt:
+            self.led.on((0, 255, 0))
+        elif node_type is LedRStmt:
+            self.led.on((255, 0, 0))
+        elif node_type is LedBStmt:
+            self.led.on((0, 0, 255))
+        elif node_type is LedOffStmt:
+            self.led.off()
+        elif node_type is ButtonDefStmt:
             self.button_handler = node.body
-        elif isinstance(node, Literal):
-            pass  # A literal is a value, nothing to execute
-        else:
-            raise RuntimeError(f"Unknown node type: {type(node)}")
+        elif node_type is not Literal:
+            raise RuntimeError("Unknown node type: " + str(node_type))
 
-    def _execute_var_declaration(self, node: VarStmt):
-        value = self._evaluate(node.value)
-        self.variables[node.name.value] = value
+    def _execute_var_declaration(self, node):
+        self.variables[node.name.value] = self._evaluate(node.value)
 
-    def _execute_if_statement(self, node: IfStmt):
+    def _execute_if_statement(self, node):
         if self._evaluate(node.condition):
             self._push_statements(node.then_block)
         else:
@@ -182,190 +211,169 @@ class Interpreter:
                     return
             self._push_statements(node.else_block)
 
-    def _push_statements(self, statements: list[Stmt]):
+    def _push_statements(self, statements):
         """Push statements onto execution stack in reverse order"""
-        for statement in reversed(statements):
-            self.stmt_stack.append(statement)
+        if statements:
+            self.stmt_stack.extend(statements[::-1])
 
-    def _execute_while_statement(self, node: WhileStmt):
+    def _execute_while_statement(self, node):
         if self._evaluate(node.condition):
-            self.stmt_stack.append(node)
-            self._push_statements(node.body)
-    
-    def _substitute_variables(self, node: str) -> str:
-        if not isinstance(node, str):
-            return node
-        output = node
-        for full_name, val in self.variables.items():
-            var = full_name[1:]
-            output = output.replace("${" + var + "}", str(val))
+            stmt_stack = self.stmt_stack
+            stmt_stack.append(node)
+            if node.body:
+                stmt_stack.extend(node.body[::-1])
+
+    def _substitute_variables(self, text):
+        if not isinstance(text, str):
+            return text
+
+        # Avoid string concatenation in tight loops
+        output = text
+        variables = self.variables
+        for full_name, val in variables.items():
+            placeholder = "${" + full_name[1:] + "}"
+            if placeholder in output:
+                output = output.replace(placeholder, str(val))
         return output
 
-    def _execute_print_string(self, node: StringStmt, newline=False):
-        string = node.value.value
-        string = self._substitute_variables(string)
+    def _execute_print_string(self, node, newline):
+        string = self._substitute_variables(node.value.value)
         self.execution_stack.append(string)
-        self.keyboard.type_string(string)
-        if newline:
-            self.keyboard.press_key("ENTER")
-            self.keyboard.release_all()
 
-    def _execute_delay(self, node: DelayStmt):
+        keyboard = self.keyboard
+        keyboard.type_string(string)
+        if newline:
+            keyboard.press_key("ENTER")
+        keyboard.release_all()
+
+    def _execute_delay(self, node):
         delay_val = self._evaluate(node.value)
+        if delay_val is None:
+            raise RuntimeError("DELAY expects a number, got: None")
         try:
             ms = int(delay_val)
-        except Exception:
-            raise RuntimeError(f"DELAY expects a number, got: {ms}")
-            
-        time.sleep(float(ms / 1000))
+        except:
+            raise RuntimeError("DELAY expects a number, got: " + str(delay_val))
+        time.sleep(ms * 0.001)
 
-    def _execute_expression(self, node: Expr):
-        self._evaluate(node)
-
-    def _execute_function_declaration(self, node: FunctionStmt):
-        self.functions[node.name.value] = node.body
-
-    def _execute_function_call(self, node: Call):
-        self._push_statements(self.functions[node.name.value])
-
-    def _execute_keypress(self, node: KeyPressStmt):
+    def _execute_keypress(self, node):
+        keyboard = self.keyboard
         if node.release:
             for key in node.keys:
-                self.keyboard.release_key(key.value)
+                keyboard.release_key(key.value)
         else:
             for key in node.keys:
-                self.keyboard.press_key(key.value)
+                keyboard.press_key(key.value)
+            if not node.hold:
+                keyboard.release_all()
 
-        if not node.hold and not node.release:
-            self.keyboard.release_all()
-
-    def _execute_kbd(self, node: KbdStmt):
-        self.keyboard = RasperDuckyKeyboard(
-            node.platform.value.lower(), node.language.value.lower()
-        )
-
-    def _execute_random_char(self, node: RandomCharStmt):
-        if node.type.value not in self.RANDOM_CHAR_SETS:
-            raise RuntimeError(f"Unknown random character set: {node.type.value}")
-        char_set = self.RANDOM_CHAR_SETS[node.type.value]
-        self.keyboard.type_string(random.choice(char_set))
-
-    def _execute_random_char_from(self, node: RandomCharFromStmt):
-        self.keyboard.type_string(random.choice(str(node.value.value)))
-
-    def _execute_wait_for_button_press(self, node: WaitForButtonPressStmt):
-        self.button_wait_active = True
-        self.button.wait_for_press()
-        self.button_wait_active = False
-        self.button_ignore_until_released = True
+    def _execute_random_char(self, node):
+        node_type_value = node.type.value
+        charsets = self._RANDOM_CHAR_SETS
+        if node_type_value not in charsets:
+            raise RuntimeError("Unknown random character set: " + node_type_value)
+        self.keyboard.type_string(random.choice(charsets[node_type_value]))
 
     def _poll_button_handler(self):
-        if not self.button_handler:
+        handler = self.button_handler
+        if not handler:
             return
         if self.button_wait_active:
             return
+
         pressed = self.button.is_pressed()
+
         if self.button_ignore_until_released:
             if pressed:
-                return  # still held → keep ignoring
-            else:
-                # button was released → now handler may work normally
-                self.button_ignore_until_released = False
-                self.button_last_state = False
                 return
+            self.button_ignore_until_released = False
+            self.button_last_state = False
+            return
+
         if pressed and not self.button_last_state:
-            for stmt in reversed(self.button_handler):
-                self.stmt_stack.append(stmt)
+            stmt_stack = self.stmt_stack
+            for stmt in reversed(handler):
+                stmt_stack.append(stmt)
         self.button_last_state = pressed
 
-    def _execute_led_on(self, node, color=(255, 255, 255)):
-        self.led.on(color)
-
-    def _execute_led_off(self, node: LedOffStmt):
-        self.led.off()
-
-    def _evaluate(self, node: Expr):
+    def _evaluate(self, node):
         """Stack-based expression evaluator to avoid recursion limits"""
-        self.eval_stack = [EvalTask(node)]
-        self.value_stack = []
+        eval_stack = self.eval_stack
+        value_stack = self.value_stack
 
-        while self.eval_stack:
-            task = self.eval_stack.pop()
+        eval_stack[:] = [EvalTask(node)]
+        value_stack[:] = []
 
-            if isinstance(task, EvalTask):
+        # Cache lookups
+        eval_pop = eval_stack.pop
+        val_pop = value_stack.pop
+        val_append = value_stack.append
+
+        while eval_stack:
+            task = eval_pop()
+            task_type = type(task)
+
+            if task_type is EvalTask:
                 self._process_eval_task(task.node)
-            elif isinstance(task, BinaryOpTask):
-                self._process_binary_op(task)
-            elif isinstance(task, UnaryOpTask):
-                self._process_unary_op(task)
-            elif isinstance(task, AssignTask):
-                self._process_assign(task)
+            elif task_type is BinaryOpTask:
+                right = val_pop()
+                left = val_pop()
+                val_append(self._apply_operator(task.operator, left, right))
+            elif task_type is UnaryOpTask:
+                val_append(self._apply_unary_operator(task.operator, val_pop()))
+            elif task_type is AssignTask:
+                value = val_pop()
+                self.variables[task.var_name] = value
+                val_append(value)
 
-        return self.value_stack.pop() if self.value_stack else None
+        return val_pop() if value_stack else None
 
-    def _process_eval_task(self, node: Expr):
+    def _process_eval_task(self, node):
         """Process an evaluation task by pushing work onto stacks"""
-        if isinstance(node, Literal):
-            self.value_stack.append(int(node.value))
+        node_type = type(node)
+        eval_stack = self.eval_stack
+        value_stack = self.value_stack
 
-        elif isinstance(node, Variable):
-            try:
-                self.value_stack.append(self.variables[node.name.value])
-            except KeyError:
-                raise RuntimeError(f"Undefined variable: {node.name.value}")
-
-        elif isinstance(node, Binary):
-            self.eval_stack.append(BinaryOpTask(node.operator))
-            self.eval_stack.append(EvalTask(node.right))
-            self.eval_stack.append(EvalTask(node.left))
-
-        elif isinstance(node, Unary):
-            self.eval_stack.append(UnaryOpTask(node.operator))
-            self.eval_stack.append(EvalTask(node.right))
-
-        elif isinstance(node, Grouping):
-            self.eval_stack.append(EvalTask(node.expression))
-
-        elif isinstance(node, Assign):
-            self.eval_stack.append(AssignTask(node.name.value))
-            self.eval_stack.append(EvalTask(node.value))
-
-        elif isinstance(node, Call):
-            self._execute_function_call(node)
-            self.value_stack.append(None)
-
+        if node_type is Literal:
+            value_stack.append(int(node.value))
+        elif node_type is Variable:
+            name = node.name.value
+            if name in self.variables:
+                value_stack.append(self.variables[name])
+            else:
+                raise RuntimeError("Undefined variable: " + name)
+        elif node_type is Binary:
+            eval_stack.append(BinaryOpTask(node.operator))
+            eval_stack.append(EvalTask(node.right))
+            eval_stack.append(EvalTask(node.left))
+        elif node_type is Unary:
+            eval_stack.append(UnaryOpTask(node.operator))
+            eval_stack.append(EvalTask(node.right))
+        elif node_type is Grouping:
+            eval_stack.append(EvalTask(node.expression))
+        elif node_type is Assign:
+            eval_stack.append(AssignTask(node.name.value))
+            eval_stack.append(EvalTask(node.value))
+        elif node_type is Call:
+            self._push_statements(self.functions[node.name.value])
+            value_stack.append(None)
         else:
-            raise RuntimeError(f"Unknown node type for evaluation: {type(node)}")
+            raise RuntimeError("Unknown node type for evaluation: " + str(node_type))
 
-    def _process_binary_op(self, task: BinaryOpTask):
-        """Process a binary operation with its two operands from value stack"""
-        right = self.value_stack.pop()
-        left = self.value_stack.pop()
-        result = self._apply_operator(task.operator, left, right)
-        self.value_stack.append(result)
-
-    def _process_unary_op(self, task: UnaryOpTask):
-        """Process a unary operation with its operand from value stack"""
-        value = self.value_stack.pop()
-        result = self._apply_unary_operator(task.operator, value)
-        self.value_stack.append(result)
-
-    def _process_assign(self, task: AssignTask):
-        """Process an assignment with its value from value stack"""
-        value = self.value_stack.pop()
-        self.variables[task.var_name] = value
-        self.value_stack.append(value)
-
-    def _apply_operator(self, operator: Token, left, right):
-        if operator.type in self.BINARY_OPERATORS:
-            return self.BINARY_OPERATORS[operator.type](left, right)
+    def _apply_operator(self, operator, left, right):
+        op_type = operator.type
+        binary_ops = self._BINARY_OPERATORS
+        if op_type in binary_ops:
+            return binary_ops[op_type](left, right)
         elif operator.value == "=":
             return right
         else:
-            raise RuntimeError(f"Unknown operator: {operator.value}")
+            raise RuntimeError("Unknown operator: " + operator.value)
 
-    def _apply_unary_operator(self, operator: Token, value):
-        if operator.type in self.UNARY_OPERATORS:
-            return self.UNARY_OPERATORS[operator.type](value)
+    def _apply_unary_operator(self, operator, value):
+        op_type = operator.type
+        unary_ops = self._UNARY_OPERATORS
+        if op_type in unary_ops:
+            return unary_ops[op_type](value)
         else:
-            raise RuntimeError(f"Unknown operator: {operator.value}")
+            raise RuntimeError("Unknown operator: " + operator.value)

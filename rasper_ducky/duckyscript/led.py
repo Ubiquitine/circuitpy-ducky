@@ -1,4 +1,4 @@
-import neopixel
+import neopixel # type: ignore
 import board
 import digitalio
 
@@ -35,7 +35,7 @@ class LED:
         if led_pin is not None:
             try:
                 self.gpio_led = digitalio.DigitalInOut(led_pin)
-                self.gpio_led.direction = digitalio.Direction.OUTPUT
+                self.gpio_led.direction = digitalio.Direction.OUTPUT # type: ignore
                 self.use_gpio_led = True
                 return
             except Exception as e:
@@ -49,10 +49,10 @@ class LED:
         if self.use_neopixel and self.pixel:
             self.pixel[0] = color
         elif self.use_gpio_led and self.gpio_led:
-            self.gpio_led.value = True
+            self.gpio_led.value = True  # type: ignore
 
     def off(self):
         if self.use_neopixel and self.pixel:
             self.pixel[0] = (0, 0, 0)
         elif self.use_gpio_led and self.gpio_led:
-            self.gpio_led.value = False
+            self.gpio_led.value = False  # type: ignore
